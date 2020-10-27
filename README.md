@@ -6,4 +6,4 @@
 ![SSD structure](./images/그림1.png)
 
 ## YOLOV3
-![YOLOV3 structure](./images/그림2.png)
+![YOLOV3 structure](./images/그림2.jpg)
