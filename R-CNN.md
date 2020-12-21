@@ -19,15 +19,18 @@ Image classification을 수행하는 CNN과 localization을 위한 regional prop
 > > ![image](https://user-images.githubusercontent.com/70633080/102751575-64877680-43ab-11eb-805b-b4087ec78a36.png)
 > > - 모든 영역을 탐색하기에는 너무 느리다.
 > > - 비효율적
-> > 따라서 R-CNN에서는 이를 극복하기 위해 다른 알고리즘을 사용한다.\
-> R-cnn은 " Selective Search "라는 룰베이스 알고리즘을 통해 2000개의 물체박스를 찾는다.
+> > 따라서 R-CNN에서는 이를 극복하기 위해 다른 알고리즘을 사용한다.
+> - R-cnn은 " Selective Search "라는 룰베이스 알고리즘을 통해 2000개의 물체박스를 찾는다.
 > ### Selective Search
-> > 주변 픽셀 간의 유사도를 기준으로 Segmentation을 만들고, 이를 기준으로 물체가 있을법한 박스를 추론\
+> > - 1. 색상, 질감, 영역크기 등을 이용해 Non-object-based segmentation을 수행한다.\
+> > : 주변 픽셀 간의 유사도를 기준으로 Segmentation을 만들고, 이를 기준으로 물체가 있을법한 박스를 추론
+> > - 2. bottom up 방식으로 small segmented areas를 합쳐서 더 큰 segmented areas를 만든다.
+> > - 3. 이를 반복하여 최종적으로 2000개의 region proposal을 생성한다.
 > > ![image](https://user-images.githubusercontent.com/70633080/102708835-c3d08280-42e8-11eb-872e-e4af63ccfb51.png)
-> - 그러나 R-CNN이후 region proposal 과정은 뉴럴 네트워크가 수행하도록 발전되었다. 따라 더이상 사용하지 않는 알고리즘이다.
+> 그러나 R-CNN이후 region proposal 과정은 뉴럴 네트워크가 수행하도록 발전되었다. 따라 더이상 사용하지 않는 알고리즘이다.
 ## 2. Feature Extraction
-> Selective Search를 통해서 찾아낸 2천개의 박스 영역은 227 x 227 크기로 리사이즈 됩니다.\
-> 그리고 Image Classification으로 미리 학습되어 있는 CNN 모델을 통과하여 4096 크기의 특징 벡터를 추출한다.
+> Selective Search를 통해서 찾아낸 2천개의 박스 영역은 227 x 227 크기(또는 224*224)로 리사이즈 됩니다.\
+> 그리고 Image Classification으로 미리 학습되어 있는 CNN 모델을 통과하여 4096 고정크기의 특징 벡터를 추출한다.
 > - 미리학습된 모델이란?\
 > 이미지넷 데이터(ILSVRC2012 classification)로 미리 학습된 CNN 모델을 가져온 다음, fine tune하는 방식/
 >  Classification의 마지막 레이어를 Object Detection의 클래스 수 N과 아무 물체도 없는 배경까지 포함한 N+1로.
@@ -52,7 +55,7 @@ Image classification을 수행하는 CNN과 localization을 위한 regional prop
 > > - 논문에서는 iou가 0.5보다 크면 동일한 물체를 대상으로 한 박스라고 판단. 
 ## 5. Bounding Box Regression
 > 앞서에서 selective search를 통해 찾은 박스의 위치는 부정확하다는 문제가 있다.\
-> 따라서 성능을 높이기 위해 박스의 위치를 교정해주는 과정을 거친다.\
+> 따라서 성능을 높이기 위해 박스의 위치를 교정해주는 선형회귀모델과정을 거친다.\
 > 하나의 박스는 다음과 같이 표기될 수 있다.\
 > x와 y는 이미지의 중심점 , w와 h는 각각 너비와 높이이다.
 > - p_i=(p_ix,p_iy,p_iw,p_ih)\
