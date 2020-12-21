@@ -1,15 +1,26 @@
 # R-CNN
+R-CNN이란?\
+Image classification을 수행하는 CNN과 localization을 위한 regional proposal알고리즘을 연결한 모델
+- Region Proposal - CNN - SVM 
 ![image](https://user-images.githubusercontent.com/70633080/102708762-3e4cd280-42e8-11eb-82ae-273588515824.png)
 - R-CNN의 Object detection 알고리즘
 1. 입력이미지에 selective search 알고리즘을 적용해 물체가 있을만한 박스 2000개 추출
 2. 모든 박스를 227*227 사이즈로 resize. (박스의 비율은 고려하지 않는다.)
+> Convolution layer에는 input size가 고정이지 않지만 마지막 FC layer에서의 input size가 고정이므로 Convolution에 대한 output size가 동일해야하기 때문이다.
 3. 이미지넷 데이터를 통해 학습된 CNN을 통과시켜 4096차원의 특징벡터를 추출.
 4. 추출된 벡터로 각 클래스마다 학습시켜놓은 SVM Classifier를 통과.
 5. 바운딩 박스 리그레션을 적용해 박스의 위치를 조정
 
 ## 1. Region Proposal
 > Region Proposal이란 주어진 이미지에서 물체가 있을법한 위치를 찾는것이다.\
-> R-cnn은 " Selective Search "라는 룰베이스 알고리즘을 통해 2000개의 물체박스를 찾는다.\
+> 기존의 sliding window 방식을 보완한것. 
+> ### sliding window
+> > 이미지에서 물체를 찾기위해 window의 크기,비율을 임의로 바꿔가며 모든영역에 대해 탐색하는것\
+> > ![image](https://user-images.githubusercontent.com/70633080/102751575-64877680-43ab-11eb-805b-b4087ec78a36.png)
+> > - 모든 영역을 탐색하기에는 너무 느리다.
+> > - 비효율적
+> > 따라서 R-CNN에서는 이를 극복하기 위해 다른 알고리즘을 사용한다.\
+> R-cnn은 " Selective Search "라는 룰베이스 알고리즘을 통해 2000개의 물체박스를 찾는다.
 > ### Selective Search
 > > 주변 픽셀 간의 유사도를 기준으로 Segmentation을 만들고, 이를 기준으로 물체가 있을법한 박스를 추론\
 > > ![image](https://user-images.githubusercontent.com/70633080/102708835-c3d08280-42e8-11eb-872e-e4af63ccfb51.png)
@@ -54,4 +65,13 @@
 > w와 h는 이미지의 크기에 비례하여 조정을 시켜주어야 한다.
 > - P를 이동시키는 함수의 식
 > ![image](https://user-images.githubusercontent.com/70633080/102711871-28e3a280-4300-11eb-96de-8455e0faef65.png)
-
+> - 우리가 학습을 통해 얻고자 하는 것은 d함수이다.\
+>  d 함수를 구하기 위해서 앞서 CNN을 통과할 때 pool5 레이어에서 얻어낸 특징 벡터를 사용한다. 그리고 함수에 학습가능한 웨이트 벡터를 주어 계산한다.
+> - 이를 식으로 나타내면 아래와 같다.\
+>![image](https://user-images.githubusercontent.com/70633080/102748908-6c90e780-43a6-11eb-9dce-253debb7a07f.png)
+> - 아래는 loss function이다.
+> ![image](https://user-images.githubusercontent.com/70633080/102748999-94804b00-43a6-11eb-9134-fc0a6e654081.png)\
+> 일반적인 MSE error function에 L2 normalization을 추가한 형태이며 람다를 1000으로 설정하였다.
+> - t는 P를 G로 이동시키기 위해 필요한 이동량을 의미한다.
+> ![image](https://user-images.githubusercontent.com/70633080/102749096-bb3e8180-43a6-11eb-90d7-f41d95e95498.png)
+> 따라서, CNN을 통과해 추출된 벡터와 x,y,w,h를 조정하는 함수의 weight를 곱해서 bounding box를 조정해주는 선형회귀를 학습시키는 것이다.
