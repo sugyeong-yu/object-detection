@@ -12,7 +12,7 @@ def bbox_wh_iou(wh1, wh2):
     return inter_area / union_area
 
 
-def matching_target(pred_box,target,pred_cls,anchors):
+def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
     batch_size = pred_box.size(0) #배치사이즈 , 1
     num_anchor = pred_box.size(1) #앵커박스개수 ,3
@@ -49,9 +49,20 @@ def matching_target(pred_box,target,pred_cls,anchors):
     obj_mask[batch_size,best_iou_idxs,gj,gi] = 1 #물체가 있는 곳을 1로 만들어줌 ex) 0번쨰 물체의 anchor idx는 0이고 실제 중심좌표는 1,1일때 0의 1,1을 True로.
     no_obj_mask[batch_size, best_iou_idxs, gj, gi] = 0 # 물체가 있는 곳을 0으로 만들어줌
 
+    # iou가 임계값보다 클 경우, no_obj_mask 에서 0으로 만들기 (물체가 있다고 판단)
+    for i, anchor_ious in enumerate(ious.t()):
+        no_obj_mask[batch[i], anchor_ious > ignore_thres, gj[i], gi[i]] = 0
+
+    # ground truth 좌표의 변화량 구하기 (offset)
+    tx[batch,best_iou_idxs,gj,gi]=gx-gx.floor()
+    ty[batch, best_iou_idxs, gj, gi] = gy - gy.floor()
 
 
 
+
+
+
+# best_ious랑 objmask 동작확인용 테스트코드
 a=torch.tensor([(10, 13), (16, 30), (33, 23)])
 gwh =torch.tensor([(10, 13), (16, 30), (33, 23),(50,40)])
 
