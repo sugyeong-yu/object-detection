@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 def bbox_wh_iou(wh1, wh2):
     print("wh1:",wh1)
     print("wh2:", wh2)
@@ -11,7 +12,28 @@ def bbox_wh_iou(wh1, wh2):
     union_area = (w1 * h1 + 1e-16) + w2 * h2 - inter_area
     return inter_area / union_area
 
-def bbox_iou
+def bbox_iou(box1,box2,x1y1x2y2=True):
+    # 2개의 box에 대한 iou를 계산하고 return해준다.
+    # x1y1x2y2가 False면 좌상단 우하단으로 바꿔줌잠ㅁ (계산의 편리성 위해)
+    if not x1y1x2y2:
+        b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:, 2] / 2
+        b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:, 3] / 2
+        b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:, 2] / 2
+        b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
+    else :
+        b1_x1, b1_y1, b1_x2, b1_y2 = box1[:, 0], box1[:, 1], box1[:, 2], box1[:, 3]
+        b2_x1, b2_y1, b2_x2, b2_y2 = box2[:, 0], box2[:, 1], box2[:, 2], box2[:, 3]
+
+    # 교차되는 직사각형의 좌표를 얻는다.
+    inter_x1 = torch.max(b1_x1,b2_x1)
+    inter_y1 = torch.max(b1_y1, b2_y1)
+    inter_x2 = torch.min(b1_x2, b2_x2)
+    inter_y2 = torch.min(b1_y2, b2_y2)
+    # clamp는 min혹은 max의 범주에 해당되도록 값을 변경하는 것을 의미한다.
+    # ex) 2, 3, 5가 있을때 min=4라고 한다면 최소가 4가 되도록 이하의 값들을 교체한다.
+    inter_area = torch.clamp(inter_x2-inter_x1+1,min=0) * torch.clamp(inter_y2-inter_y1+1,min=0) # 왜 +1???
+
+
 
 def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
@@ -55,8 +77,8 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
         no_obj_mask[batch[i], anchor_ious > ignore_thres, gj[i], gi[i]] = 0
 
     # ground truth 좌표의 변화량 구하기 (offset)
-    tx[batch,best_iou_idxs,gj,gi]=gx-gx.floor()
-    ty[batch, best_iou_idxs, gj, gi] = gy - gy.floor()
+    tx[batch,best_iou_idxs,gj,gi]=gx-gx.floor() # 해당 anchor box의 실제 물체 좌표에만 값이 들어가게됨.
+    ty[batch,best_iou_idxs, gj, gi] = gy - gy.floor()
     tw[batch,best_iou_idxs,gj,gi] = torch.log(gw/anchors[best_iou_idxs][:,0]+1e-16) # 여기 왜 이런 연산?
     th[batch,best_iou_idxs,gj,gi] = torch.log(gh/anchors[best_iou_idxs][:,1]+1e-16)
 
@@ -65,8 +87,7 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
 
     # 물체에 해당하는 ioubox 인덱스의 feature map에서 물체의 실제좌표의 클래스 = 예측한것과 target이 맞는경우 1, 틀리면 0
     class_mask[batch_size, best_iou_idxs, gj, gi] = (pred_cls[batch_size, best_iou_idxs, gj, gi].argmax(-1) == target_labels).float()
-    iou_score[batch_size, best_iou_idxs, gj, gi] = bbox_iou(pred_box[batch_size, best_iou_idxs, gj, gi], target_boxes, x1y1x2y2=False) # bbox iou계싼
-
+    iou_score[batch_size, best_iou_idxs, gj, gi] = bbox_iou(pred_box[batch_size, best_iou_idxs, gj, gi], target_box, x1y1x2y2=False) # bbox iou계싼
 
     tconf = obj_mask.float()
     return iou_score, class_mask, obj_mask, no_obj_mask, tx, ty, tw,th, tcls, tconf
