@@ -11,6 +11,7 @@ def bbox_wh_iou(wh1, wh2):
     union_area = (w1 * h1 + 1e-16) + w2 * h2 - inter_area
     return inter_area / union_area
 
+def bbox_iou
 
 def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
@@ -56,6 +57,20 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # ground truth 좌표의 변화량 구하기 (offset)
     tx[batch,best_iou_idxs,gj,gi]=gx-gx.floor()
     ty[batch, best_iou_idxs, gj, gi] = gy - gy.floor()
+    tw[batch,best_iou_idxs,gj,gi] = torch.log(gw/anchors[best_iou_idxs][:,0]+1e-16) # 여기 왜 이런 연산?
+    th[batch,best_iou_idxs,gj,gi] = torch.log(gh/anchors[best_iou_idxs][:,1]+1e-16)
+
+    #one-hot encoding of label
+    tcls[batch,best_iou_idxs,gj,gi,target_labels] = 1 # 물체마다 해당하는 anchor인덱스에서 실제물체의 좌표에 1을 넣어줌.
+
+    # 물체에 해당하는 ioubox 인덱스의 feature map에서 물체의 실제좌표의 클래스 = 예측한것과 target이 맞는경우 1, 틀리면 0
+    class_mask[batch_size, best_iou_idxs, gj, gi] = (pred_cls[batch_size, best_iou_idxs, gj, gi].argmax(-1) == target_labels).float()
+    iou_score[batch_size, best_iou_idxs, gj, gi] = bbox_iou(pred_box[batch_size, best_iou_idxs, gj, gi], target_boxes, x1y1x2y2=False) # bbox iou계싼
+
+
+    tconf = obj_mask.float()
+    return iou_score, class_mask, obj_mask, no_obj_mask, tx, ty, tw,th, tcls, tconf
+
 
 
 
