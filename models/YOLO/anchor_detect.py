@@ -11,6 +11,10 @@ class YoloDetection(nn.Module):
         self.numclass = classnum
         self.mse_loss = nn.MSELoss()
         self.bce_loss = nn.BCELoss()
+        self.ignore_thres = 0.5
+
+        self.obj_weight = 1
+        self.no_obj_weight = 100
 
     def forward(self, x , targets):
         batch_size = x.size(0)
@@ -60,6 +64,22 @@ class YoloDetection(nn.Module):
         #             print("target is none")
         #             return output, 0
 
-        matching_target(pred_bbox,targets,pred_cls,self.anchor)
+        iou_score, class_mask,obj_mask, no_obj_mask, tx, ty, tw, th, tcls, tconf = matching_target(pred_bbox,targets,pred_cls,self.anchor,self.ignore_thres)
 
-        return output
+        #loss 계산 예측변화량 - 실제변화량
+        loss_x = self.mse_loss(bx[obj_mask], tx[obj_mask])
+        loss_y = self.mse_loss(by[obj_mask], ty[obj_mask])
+        loss_w = self.mse_loss(w[obj_mask],tw[obj_mask])
+        loss_h = self.mse_loss(h[obj_mask], ty[obj_mask])
+        loss_bbox = loss_x + loss_y + loss_w + loss_h
+
+        loss_conf_obj = self.bce_loss(pred_conf[obj_mask], tconf[obj_mask])
+        loss_conf_no_obj = self.bce_loss(pred_conf[no_obj_mask], tconf[no_obj_mask])
+        loss_conf = (self.obj_weight * loss_conf_obj) + (self.no_obj_weight * loss_conf_no_obj) # scale은 뭘까
+
+        loss_cls = self.bce_loss(pred_cls[obj_mask], tcls[obj_mask])
+
+        loss_layer = loss_bbox + loss_conf + loss_cls
+
+        # loss와 최종 절대좌표의 pred box를 출력한다.
+        return output, loss_layer

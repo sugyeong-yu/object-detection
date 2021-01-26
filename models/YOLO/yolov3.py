@@ -99,7 +99,7 @@ class Yolo_v3(nn.Module):
         self.conv_final3 = self.conv_final(128, 255)
         self.anchor_box3 = YoloDetection(anchor['grid52'], self.img_size, self.class_num)
 
-    def forward(self, x):
+    def forward(self, x, target=None):
         targets=None
 
         print("darknet53 ")
@@ -115,7 +115,7 @@ class Yolo_v3(nn.Module):
         out1 = self.conv_set1(res5)
         first = self.conv_final1(out1)
 
-        anchor13 = self.anchor_box1(first,targets)  # [1,507,85]
+        anchor13, loss_layer1 = self.anchor_box1(first,targets)  # [1,507,85]
 
         # 2번째 feature
         out2 = self.conv_layer1(out1)
@@ -125,7 +125,7 @@ class Yolo_v3(nn.Module):
         out2 = self.conv_set2(out2)
         second = self.conv_final2(out2)
 
-        anchor26 = self.anchor_box2(second,targets)  # [1, 2028, 85]
+        anchor26, loss_layer2 = self.anchor_box2(second,targets)  # [1, 2028, 85]
 
         # 3번째 feature
         out3 = self.conv_layer2(out2)
@@ -135,7 +135,7 @@ class Yolo_v3(nn.Module):
         out3 = self.conv_set3(out3)
         thrid = self.conv_final3(out3)
 
-        anchor52 = self.anchor_box3(thrid,targets)  # [1, 8112, 85]
+        anchor52, loss_layer3 = self.anchor_box3(thrid,targets)  # [1, 8112, 85]
 
         # feature 크기출력
         print(">>>>> featuremap extract <<<<<")
@@ -145,8 +145,13 @@ class Yolo_v3(nn.Module):
 
         # anchor box합치기
         print(">>>>> anchor box prediction <<<<<")
-        pred_BBOX = [anchor13, anchor26, anchor52]
-        pred_BBOX = torch.cat(pred_BBOX, 1)  # 인덱스1번째 차원으로 합치기. shape: [1,10647,85]
+        yolo_output = [anchor13, anchor26, anchor52]
+        yolo_output = torch.cat(yolo_output, 1).detach()  # 인덱스1번째 차원으로 합치기. shape: [1,10647,85]
+
+        # 최종 loss
+        loss = loss_layer1 + loss_layer2 + loss_layer3
+
+        return yolo_output if target is None else (loss, yolo_output)
 
     def conv_set(self, in_c, out_c):
         increase_c = out_c * 2

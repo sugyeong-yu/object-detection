@@ -24,6 +24,7 @@ def bbox_iou(box1,box2,x1y1x2y2=True):
         b1_x1, b1_y1, b1_x2, b1_y2 = box1[:, 0], box1[:, 1], box1[:, 2], box1[:, 3]
         b2_x1, b2_y1, b2_x2, b2_y2 = box2[:, 0], box2[:, 1], box2[:, 2], box2[:, 3]
 
+    # inter
     # 교차되는 직사각형의 좌표를 얻는다.
     inter_x1 = torch.max(b1_x1,b2_x1)
     inter_y1 = torch.max(b1_y1, b2_y1)
@@ -33,7 +34,12 @@ def bbox_iou(box1,box2,x1y1x2y2=True):
     # ex) 2, 3, 5가 있을때 min=4라고 한다면 최소가 4가 되도록 이하의 값들을 교체한다.
     inter_area = torch.clamp(inter_x2-inter_x1+1,min=0) * torch.clamp(inter_y2-inter_y1+1,min=0) # 왜 +1???
 
+    # union
+    b1_area = (b1_x2 - b1_x1 + 1) * (b1_y2 - b1_y1 + 1)
+    b2_area = (b2_x2 - b2_x1 + 1) * (b2_y2 - b2_y1 + 1)
 
+    iou = inter_area / (b1_area + b2_area - inter_area + 1e-16)
+    return iou
 
 def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
@@ -98,19 +104,19 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
 
 
 
-# best_ious랑 objmask 동작확인용 테스트코드
-a=torch.tensor([(10, 13), (16, 30), (33, 23)])
-gwh =torch.tensor([(10, 13), (16, 30), (33, 23),(50,40)])
-
-ious = torch.stack([bbox_wh_iou(i, gwh) for i in a])
-_,best_iou_idxs=ious.max(0)
-print(ious)
-print(ious.shape)
-print(ious.max(0))
-
-gi=torch.tensor([1,2,3,4])
-gj=torch.tensor([1,2,3,4])
-
-obj_mask = torch.zeros(1, 3, 13, 13, dtype=torch.bool)
-obj_mask[0,best_iou_idxs,gj,gi] = 1
-print(obj_mask)
+# # best_ious랑 objmask 동작확인용 테스트코드
+# a=torch.tensor([(10, 13), (16, 30), (33, 23)])
+# gwh =torch.tensor([(10, 13), (16, 30), (33, 23),(50,40)])
+#
+# ious = torch.stack([bbox_wh_iou(i, gwh) for i in a])
+# _,best_iou_idxs=ious.max(0)
+# print(ious)
+# print(ious.shape)
+# print(ious.max(0))
+#
+# gi=torch.tensor([1,2,3,4])
+# gj=torch.tensor([1,2,3,4])
+#
+# obj_mask = torch.zeros(1, 3, 13, 13, dtype=torch.bool)
+# obj_mask[0,best_iou_idxs,gj,gi] = 1
+# print(obj_mask)
