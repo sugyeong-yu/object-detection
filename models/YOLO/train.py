@@ -2,7 +2,8 @@ import os, time
 import torch
 import torch.utils.data
 import torch.utils.tensorboard
-import tqdm
+from tqdm import trange, tqdm
+import time
 import yolov3
 
 
@@ -25,6 +26,14 @@ schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
 
 # 현재 배치 손실값을 출력하는 tqdm설정
 # tqdm은 작업시간이 얼마나 남았는지 확인하고 싶을때 진행상태바를 만들 수 있는 라이브러리이다.
-# from tqdm import tqdm
 # total : 전체 반복량, bar_format : str , leave : bool, default로 True (진행상태에서 잔상이남음)
-loss_log = tqdm.tqdm(total=0, position=2, bar_format= '{desc}',leave=False)
+loss_log = tqdm(total=0, position=1, bar_format= '{desc}',leave=True)
+
+# for i in tqdm(range(10)):
+#     time.sleep(0.1)
+#     loss_log.set_description_str('Loss: {:.6f}'.format(1)) # 진행바의 이름을 바꿔줄 수 있음
+
+for epoch in tqdm.tqdm(range(args.epoch), desc='Epoch'):
+    model.train() # train mode
+    for batch_idx, (_, images, targets) in enumerate(tqdm.tqdm(dataloader, desc='Batch', leave=False)):
+        step = len(dataloader) * epoch + batch_idx
