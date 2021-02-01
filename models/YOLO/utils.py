@@ -1,5 +1,34 @@
 import torch
 from torch import nn
+def corner(x):
+    # x는 [x,y,w,h] 형태
+    y = x.new(x.shape)
+    y[..., 0] = x[..., 0] - x[..., 2] / 2
+    y[..., 1] = x[..., 1] - x[..., 3] / 2
+    y[..., 2] = x[..., 0] + x[..., 2] / 2
+    y[..., 3] = x[..., 1] + x[..., 3] / 2
+    return y
+
+def NMS(pred_box,conf_thres,nms_thres):
+    # 1. conf thres보다 작은 bbox삭제
+    # 2. class score 순으로 정렬
+    # 3. NMS수행 : class 별로 다음 박스와 비교하고 thres를 넘으면 동일 객체로 판별하고 0으로 만들어줌.
+    # return > (x1, y1, x2, y2, object_conf, class_score, class_pred)
+    pred_box[...,:4] = corner(pred_box[...,:4]) # 점들을 코너로 바꿔줌
+    output = [None for _ in range(len(pred_box))] # out shape정의
+
+    for img_i,img_pred in enumerate(pred_box):
+        # 1. confidence score가 thres 넘는거만 통과
+        img_pred = img_pred[img_pred[:,4] >= conf_thres]
+        if not img_pred.size(0):
+            continue
+
+        # score계산 (conf * class)
+        score = img_pred[:,4] * img_pred[:,5:].max(1)[0] # 클래스 점수 제일 큰 클래스와 conf를 곱한다.
+
+        # 정렬 ( 큰순으로 정렬하기 위해서 score에 -를 붙임)
+        img_pred = img_pred[(-score).argsort()] # argsort(dim=1) > 행마다 각 열에서 값이 낮은 순으로 인덱스로 저장., img_pred는 큰 순으로 정렬
+
 
 
 def bbox_wh_iou(wh1, wh2):
