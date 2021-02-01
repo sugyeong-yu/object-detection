@@ -27,7 +27,13 @@ def NMS(pred_box,conf_thres,nms_thres):
         score = img_pred[:,4] * img_pred[:,5:].max(1)[0] # 클래스 점수 제일 큰 클래스와 conf를 곱한다.
 
         # 정렬 ( 큰순으로 정렬하기 위해서 score에 -를 붙임)
-        img_pred = img_pred[(-score).argsort()] # argsort(dim=1) > 행마다 각 열에서 값이 낮은 순으로 인덱스로 저장., img_pred는 큰 순으로 정렬
+        img_pred = img_pred[(-score).argsort()] # argsort(dim=1) > 행마다 각 열에서 값이 낮은 순으로 인덱스로 저장., img_pred는 score큰 순으로 정렬
+        class_confs, class_preds = img_pred[:, 5:].max(1, keepdim=True)#(값, 인덱스) keepdim=True > 해당차원을 제외하고 출력tensor는 동일한 크기의 dim을 유지, 가장 큰 class score과 인덱스를 출력
+        detections = torch.cat((img_pred[:, :5], class_confs.float(), class_preds.float()), 1) # 열을 기준으로 합침. 열이 늘어남.
+
+        # anchorbox가 있는 만큼 반복문 실행
+        while detections.size(0):
+
 
 
 
@@ -108,7 +114,7 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     no_obj_mask[batch_size, best_iou_idxs, gj, gi] = 0 # 물체가 있는 곳을 0으로 만들어줌
 
     # iou가 임계값보다 클 경우, no_obj_mask 에서 0으로 만들기 (물체가 있다고 판단)
-    for i, anchor_ious in enumerate(ious.t()):
+    for i, anchor_ious in enumerate(iou.t()):
         no_obj_mask[batch[i], anchor_ious > ignore_thres, gj[i], gi[i]] = 0
 
     # ground truth 좌표의 변화량 구하기 (offset)
@@ -149,3 +155,7 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
 # obj_mask = torch.zeros(1, 3, 13, 13, dtype=torch.bool)
 # obj_mask[0,best_iou_idxs,gj,gi] = 1
 # print(obj_mask)
+
+a=torch.tensor([(1,3,2,4),
+                (3,4,2,1),
+                (1,5,3,8)])

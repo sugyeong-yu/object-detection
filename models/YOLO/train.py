@@ -1,12 +1,26 @@
 import os, time
 import torch
 import torch.utils.data
+import argparse
 import torch.utils.tensorboard
 from tqdm import trange, tqdm
 import time
 import yolov3
 
+# Data parse
+parser =  argparse.ArgumentParser()
+parser.add_argument("epoch",type=int,default=100,help="number of epoch")
+parser.add_argument("gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
+parser.add_argument("multiscale_training",type=bool,default=True,help="allow for multi-scale training")
+parser.add_argument("--batch_size", type=int, default=16, help="size of each image batch")
+parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
+parser.add_argument("--data_config", type=str, default="config/voc.data", help="path to data config file")
+# parser.add_argument("--pretrained_weights", type=str, default='weights/darknet53.conv.74',
+#                     help="if specified starts from checkpoint model") # weight불러오기
+parser.add_argument("--image_size", type=int, default=416, help="size of each image")
 
+args = parser.parse_args() # 저장
+print(args)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
