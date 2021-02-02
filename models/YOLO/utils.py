@@ -1,5 +1,45 @@
 import torch
 from torch import nn
+
+
+
+
+
+def parse_data_config(path: str):
+    """데이터셋 설정 파일을 parse한다."""
+    options = {}
+    with open(path, 'r') as f:
+        lines = f.readlines() # lines 는 train.txt경로 valid.txt경로
+    for line in lines:
+        print(line)
+        line = line.strip() # strip() > 문자열의 양끝에 존재하는 공백과 \n을 제거해줌
+        key, value = line.split('=') # key는 train value는 train.txt경로
+        options[key.strip()] = value.strip() # dict반환
+    return options
+
+class Dataset(torch.utils.data.Dataset) :
+    def __init__(self, datapath : str , image_size : int, augment :bool, ):
+        # 경로가 주어지면 바로 그 경로안의 이미지들을 읽을수도 있지않을까?
+        with open(datapath,'r') as file :
+            self.img_files = file.readlines() # text파일에서 image하나당 경로를 읽어옴.
+
+        # path ./data/coco/images/val2014/COCO_val2014_000000580607.jpg\n' ->./data/coco/labels/val2014/COCO_val2014_000000581736.txt\n'
+        self.label_files = [path.replace('images', 'labels').replace('.png', '.txt').replace('.jpg', '.txt')
+                                .replace('JPEGImages', 'labels') for path in self.img_files]
+
+        self.image_size = image_size
+        self.max_objects = 100
+        self.augment = augment
+        # self.multiscale = multiscale
+        # self.normalized_labels = normalized_labels
+        # self.batch_count = 0
+
+
+path = "E:\study\sugyeong_github\object-detection\models\YOLO\data\coco\\train.txt"
+print(Dataset(path).label_files)
+
+
+
 def corner(x):
     # x는 [x,y,w,h] 형태
     y = x.new(x.shape)
@@ -32,7 +72,7 @@ def NMS(pred_box,conf_thres,nms_thres):
         detections = torch.cat((img_pred[:, :5], class_confs.float(), class_preds.float()), 1) # 열을 기준으로 합침. 열이 늘어남.
 
         # anchorbox가 있는 만큼 반복문 실행
-        while detections.size(0):
+        # while detections.size(0):
 
 
 
@@ -155,7 +195,3 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
 # obj_mask = torch.zeros(1, 3, 13, 13, dtype=torch.bool)
 # obj_mask[0,best_iou_idxs,gj,gi] = 1
 # print(obj_mask)
-
-a=torch.tensor([(1,3,2,4),
-                (3,4,2,1),
-                (1,5,3,8)])
