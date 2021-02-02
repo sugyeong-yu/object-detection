@@ -19,6 +19,6 @@ print(args.gradient_accumulation)
 1. argparse.ArgumentParser()\
 ![image](https://user-images.githubusercontent.com/70633080/106458577-f074de00-64d3-11eb-9fff-c8ea6de6a96e.png)
 
-2. add_argumetn()\
+2. add_argument()\
 ![image](https://user-images.githubusercontent.com/70633080/106458624-01255400-64d4-11eb-9a89-a41355b7fc13.png)
 
