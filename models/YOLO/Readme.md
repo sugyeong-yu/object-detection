@@ -56,4 +56,26 @@ dataloader = torch.utils.data.DataLoader(dataset,
   4. num_workers (default = 0): data가 main process로 불러오는 것을 의미한다. (멀티프로세싱 개수)
   5. collate_fn : map-style 데이터셋에서 sample list를 batch단위로 바꾸기위해 필요한 기능이다. zero-padding이나 variable size데이터 등 data size를 맞추기위해 주로 사용한다.
 
-
+## Transforms
+- torchvision.transforms.Compose()\
+: Compose()는 여러 transform들을 compose로 구성할 수 있다.
+```
+transforms = torchvision.transforms.Compose([
+                torchvision.transforms.ColorJitter(brightness=1.5, saturation=1.5, hue=0.1),
+                torchvision.transforms.ToTensor()
+            ])
+```
+- 사용할 수 있는 함수
+  - transforms.ToPILImage() : csv파일로 데이터셋을 받은 경우, PIL Image로 바꿔줌
+  - transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0) : 이미지의 밝기, 대비 및 채도를 임의로 변경한다.
+  - transforms.CenterCrop(size) : 가운데 부분을 size크기로 자른다.
+  - transforms.Grayscale(num_output_channels=1) : grayscale로 변환한다.
+  - transforms.RandomAffine(degrees) : 랜덤으로 affine변형을 한다.
+  - transforms.RandomCrop(size) : 이미지를 랜덤으로 아무데나 잘라 size크기로 출력한다.
+  - transforms.Resize(size) : 이미지사이즈를 size로 변경한다.
+  - transforms.RandomRotation(degrees) : 이미지를 랜덤으로 degress각도로 회전한다.
+  - transforms.RandomResizedCrop(size, scale=(0.08,1.0), ratio=(0.75, 1.3333333)) : 이미지를 랜덤으로 변형한다.
+  - transforms.RandomVerticalFlip(p=0.5) - 이미지를 랜덤으로 수직으로 뒤집는다. p =0이면 뒤집지 않는다.
+  - transforms.RandomHorizontalFlip(p=0.5) - 이미지를 랜덤으로 수평으로 뒤집는다.
+  - transforms.ToTensor() - 이미지 데이터를 tensor로 바꿔준다.
+  - transforms.Normalize(mean, std, inplace=False) - 이미지를 정규화한다.
