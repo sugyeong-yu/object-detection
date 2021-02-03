@@ -79,3 +79,24 @@ transforms = torchvision.transforms.Compose([
   - transforms.RandomHorizontalFlip(p=0.5) - 이미지를 랜덤으로 수평으로 뒤집는다.
   - transforms.ToTensor() - 이미지 데이터를 tensor로 바꿔준다.
   - transforms.Normalize(mean, std, inplace=False) - 이미지를 정규화한다.
+  
+ ## img 정사각형으로 만들기
+ ```
+ # 너비와 높이의 차
+    difference = abs(h - w)
+
+    # (top, bottom) padding or (left, right) padding
+    if h <= w:
+        top = difference // 2
+        bottom = difference - difference // 2
+        pad = [0, 0, top, bottom]
+    else:
+        left = difference // 2
+        right = difference - difference // 2
+        pad = [left, right, 0, 0]
+
+    # Add padding
+    image = F.pad(image, pad, mode='constant', value=pad_value)
+    return image, pad
+```
+- F.pad(img, pad=(n,m), value) : img의 앞에 n개, 뒤에 m개의 value를 padding하여 반환한다. 
