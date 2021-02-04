@@ -101,5 +101,7 @@ transforms = torchvision.transforms.Compose([
 ```
 - F.pad(img, pad=(n,m), value) : img의 앞에 n개, 뒤에 m개의 value를 padding하여 반환한다. 
 
+## labeling
+- np.loadtxt
 # 참고
 - coco dataset - <https://velog.io/@dkdk6638/Pytorch-COCO-Dataset>
