@@ -7,7 +7,7 @@ from tqdm import trange, tqdm
 import utils.utils
 import utils.Dataset
 import time
-import yolov3
+from models import yolov3
 
 
 # Data parse
