@@ -46,8 +46,8 @@ class Dataset(torch.utils.data.Dataset):
             self.img_files = file.readlines()  # text파일에서 image하나당 경로를 읽어옴.
 
         # path ./data/coco/images/val2014/COCO_val2014_000000580607.jpg\n' ->./data/coco/labels/val2014/COCO_val2014_000000581736.txt\n'
-        # self.label_files = [path.replace('images', 'labels').replace('.png', '.txt').replace('.jpg', '.txt')
-        #                         .replace('JPEGImages', 'labels') for path in self.img_files]
+        self.label_files = [path.replace('images', 'labels').replace('.png', '.txt').replace('.jpg', '.txt')
+                                .replace('JPEGImages', 'labels') for path in self.img_files]
 
         self.image_size = image_size
         self.max_objects = 100
@@ -58,8 +58,7 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         # 1. image처리
-        # image_path = self.img_files[index].rstrip() # rstrip()은 문자열의 지정된 문자열의 끝을 (기본값은 공백) 삭제
-        image_path = "E:\study\sugyeong_github\object-detection\models\YOLO\data\coco\images\\train2014\COCO_train2014_000000000009.jpg"
+        image_path = self.img_files[index].rstrip() # rstrip()은 문자열의 지정된 문자열의 끝을 (기본값은 공백) 삭제
         # img augmentation
         if self.augment:
             transforms = torchvision.transforms.Compose([
@@ -78,15 +77,13 @@ class Dataset(torch.utils.data.Dataset):
         _, pad_h, pad_w = image.shape
 
         # # 2. label처리
-        # label_path = self.label_files[index].rstrip()
+        label_path = self.label_files[index].rstrip()
 
-        label_path = "E:\study\sugyeong_github\object-detection\models\YOLO\data\coco\labels\\train2014\COCO_train2014_000000000009.txt"
         targets = None
         if os.path.exists(label_path):
             # np.loadtxt : ("파일경로",파일구분자,데이터타입) 을 지정하여 파일을 읽어와 데이터변수에 array로 넣어준다.
             # 8*(class, x,y,w,h) 형태로 반환
             boxes = torch.from_numpy(np.loadtxt(label_path).reshape(-1, 5))  # 5열의 형태로 만든후 array -> tensor
-            # print(boxes)
 
             # 패딩 및 스케일링 전의 이미지크기에 맞게 앵커박스크기와 위치를 조정해준다.
             # ground truth의 앵커박스의 크기와 좌표는 grid size 1일때의 기준이다.
