@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from anchor_detect import YoloDetection
+from models.anchor_detect import YoloDetection
 
 def DBL(in_c, out_c, kernel_size, stride, padding):
     dbl_block = nn.Sequential(nn.Conv2d(in_c, out_c, kernel_size=kernel_size, padding=padding, stride=stride),
@@ -72,10 +72,10 @@ class Darknet53(nn.Module):
 
 
 class Yolo_v3(nn.Module):
-    def __init__(self):
+    def __init__(self,image_size:int, class_num :int ):
         super(Yolo_v3, self).__init__()
-        self.class_num = 80
-        self.img_size = 416
+        self.class_num = class_num
+        self.img_size = image_size
         anchor = {'grid52': [(10, 13), (16, 30), (33, 23)],
                   'grid26': [(30, 61), (62, 45), (59, 119)],
                   'grid13': [(116, 90), (156, 198), (373, 326)]}
@@ -100,8 +100,6 @@ class Yolo_v3(nn.Module):
         self.anchor_box3 = YoloDetection(anchor['grid52'], self.img_size, self.class_num)
 
     def forward(self, x, target=None):
-        targets=None
-
         print("darknet53 ")
         res5, res4, res3 = self.darknet53(x)
 
@@ -169,7 +167,7 @@ class Yolo_v3(nn.Module):
 
 
 # 입력이미지 랜덤생성
-input_image=torch.randn(1,3,416,416)
-print(input_image.shape)
-
-Yolo_v3().forward(x=input_image)
+# input_image=torch.randn(1,3,416,416)
+# print(input_image.shape)
+#
+# Yolo_v3().forward(x=input_image)

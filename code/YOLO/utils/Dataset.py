@@ -116,7 +116,7 @@ class Dataset(torch.utils.data.Dataset):
         return image_path, image, targets
 
     def __len__(self):
-        return len(self.image_files)
+        return len(self.img_files)
 
     def collate_fn(self, batch):
         # __getitem__의 반환을 입력으로 받아옴 targets는 (0,class,x,y,w,h)*8
