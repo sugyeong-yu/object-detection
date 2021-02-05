@@ -17,12 +17,10 @@ parser.add_argument("--data_config", type=str, default="E:\study\sugyeong_github
 parser.add_argument("multiscale_training",type=bool,default=True,help="allow for multi-scale training")
 parser.add_argument("--image_size", type=int, default=416, help="size of each image")
 parser.add_argument("--batch_size", type=int, default=16, help="size of each image batch")
+parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
+parser.add_argument("gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
 # parser.add_argument("epoch",type=int,default=100,help="number of epoch")
-# parser.add_argument("gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
-
-# parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
-# parser.add_argument("--pretrained_weights", type=str, default='weights/darknet53.conv.74',
-#                     help="if specified starts from checkpoint model") # weight불러오기
+# parser.add_argument("--pretrained_weights", type=str, default='weights/darknet53.conv.74',help="if specified starts from checkpoint model") # weight불러오기
 
 args = parser.parse_args() # 저장
 print(args)
@@ -44,15 +42,14 @@ dataloader = torch.utils.data.DataLoader(dataset,
 # model
 model = yolov3.Yolo_v3().to(device)
 #model.apply(utils,utils.init_weights_normal) # model.apply(f) > 현재 모듈의 모든 서브모듈에 해당함수f를 적용한다. (모델파라미터 초기화할때 많이사용)
-
+# if args.pretrained_weights.endswith('.pth'):
+#     model.load_state_dict(torch.load(args.pretrained_weights))
+# else:
+#     model.load_darknet_weights(args.pretrained_weights)
 
 #optimizer설정
 optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
-# lr schedular설정
-# 1. LambdaLR : lr_lambda인자로 넣어준 함수로 계산된 값을 초기 lr에 곱해 사용
-# 2. MultiplicativeLR : lr_lambda 인자로 넣어준 함수로 계산된 값을 매 에폭마다 이전 lr에 곱해사용한다.
-# 3. StepLR : step_size에 지정된 에폭수마다 이전 lr에 감마만큼 곱해 사용한다.
-# 4. ExponentialLR : 매 에폭마다 이전 lr에 감마만큼 곱해서 사용한다.
+
 schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
 
 # 현재 배치 손실값을 출력하는 tqdm설정
@@ -68,3 +65,23 @@ for epoch in tqdm.tqdm(range(args.epoch), desc='Epoch'):
     model.train() # train mode
     for batch_idx, (_, images, targets) in enumerate(tqdm.tqdm(dataloader, desc='Batch', leave=False)):
         step = len(dataloader) * epoch + batch_idx
+
+        images = images.to(device)
+        targets = targets.to(device)
+
+        # forward, backward
+        loss, outputs = model(images, targets)
+        loss.backward()
+
+        if step % args.gradient_accumulation == 0:
+            # step마다 기울기 저장.
+            optimizer.step()
+            optimizer.zero_grad()
+
+        # 총 loss값 계산
+        loss_log.set_description('Loss: {:.6f}'.format(loss.item()))
+
+    # 1개의 epoch 완료 후
+    schedular.step() # lr_scheduler step 진행
+    precision, recall, AP, f1, _,_,_ = test.evaluate()
+
