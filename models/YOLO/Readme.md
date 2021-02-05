@@ -112,8 +112,15 @@ transforms = torchvision.transforms.Compose([
 
 #### labeling
 - np.loadtxt(txt_path) : txt를 한줄한줄 읽어옴. 
-
-
+- 패딩 및 스케일링 전의 이미지크기에 맞게 anchor box size와 위치조정
+```
+x1 = w * (boxes[:, 1] - boxes[:, 3] / 2)  # 앵커박스의 좌상단x좌표 * 이미지w크기
+y1 = h * (boxes[:, 2] - boxes[:, 4] / 2)  # 앵커박스의 좌상단y좌표 * 이미지h크기
+x2 = w * (boxes[:, 1] + boxes[:, 3] / 2)  # 앵커박스의 우하단x좌표 * w크기
+y2 = h * (boxes[:, 2] + boxes[:, 4] / 2)  # 앵커박스의 우하단y좌표 * h크기
+```
+- 이는 아래그림처럼 기존 이미지에서의 anchor box의 좌상단, 우하단 좌표를 구하는 과정이다.\
+<img src="https://user-images.githubusercontent.com/70633080/106993816-e518ff80-67be-11eb-82fe-a9910b6d2d38.png" width=80% height=80%>
 
 ---------------------------------------------------------------------
 
