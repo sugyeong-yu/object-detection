@@ -1,6 +1,7 @@
 # YOLOV3
 # Dataload
-## parsing
+## train.py 관련 함수 및 모듈
+### parsing
 ```
 import argparse
 
@@ -23,7 +24,7 @@ print(args.gradient_accumulation)
 2. add_argument()\
 ![image](https://user-images.githubusercontent.com/70633080/106458624-01255400-64d4-11eb-9a89-a41355b7fc13.png)
 
-## Dataset , DataLoader
+### Dataset , DataLoader
 - Pytorch의 Dataset과 DataLoader를 사용하면 학습을 위한 방대한 데이터를 미니배치단위로 처리할 수 있고 데이터를 무작위로 섞음으로서 학습효율성을 향상시킬 수 있다.
 ```
 dataset = utils.datasets.ListDataset(train_path, args.image_size, augment=True, multiscale=args.multiscale_training)
@@ -47,7 +48,7 @@ dataloader = torch.utils.data.DataLoader(dataset,
 - __len__ : 데이터의 크기를 반환
 - __getitem__ : index로 data를 return해주는 class
 
-2. DataLoader (torch.utils.data.DataLoader
+2. DataLoader (torch.utils.data.DataLoader)
 - data 객체에서 데이터를 읽어올 수 있음. 
 - 데이터셋의 설정을 바꾸고 싶을때 parameter의 변경으로 가능하다.
   1. dataset : torch.utils.data.Dataset객체를 사용하거나 __len__과 __getitem__을 가진 class객체를 사용해야한다.
@@ -56,7 +57,10 @@ dataloader = torch.utils.data.DataLoader(dataset,
   4. num_workers (default = 0): data가 main process로 불러오는 것을 의미한다. (멀티프로세싱 개수)
   5. collate_fn : map-style 데이터셋에서 sample list를 batch단위로 바꾸기위해 필요한 기능이다. zero-padding이나 variable size데이터 등 data size를 맞추기위해 주로 사용한다.
 
-## Transforms
+## Dataset.py 관련 함수 및 모듈
+----------------------------------------------------------------------------------
+### Class Dataset - __getitem__() 
+#### Transforms
 - torchvision.transforms.Compose()\
 : Compose()는 여러 transform들을 compose로 구성할 수 있다.
 ```
@@ -80,9 +84,11 @@ transforms = torchvision.transforms.Compose([
   - transforms.ToTensor() - 이미지 데이터를 tensor로 바꿔준다.
   - transforms.Normalize(mean, std, inplace=False) - 이미지를 정규화한다.
   
- ## img 정사각형으로 만들기
+ #### img 정사각형으로 만들기
  ```
- # 너비와 높이의 차
+ def pad_to_square(image, pad_value=0):
+    _, h, w = image.shape
+    # 너비와 높이의 차
     difference = abs(h - w)
 
     # (top, bottom) padding or (left, right) padding
@@ -99,9 +105,36 @@ transforms = torchvision.transforms.Compose([
     image = F.pad(image, pad, mode='constant', value=pad_value)
     return image, pad
 ```
+- 가로가 세로보다 긴 경우, 세로가 가로보다 긴 경우를 나누어 padding을 처리해준다.\
+<img src="https://user-images.githubusercontent.com/70633080/106993249-a6367a00-67bd-11eb-83ea-12395faf127d.png" width=70% height=70%>\
+<img src="https://user-images.githubusercontent.com/70633080/106993286-bbaba400-67bd-11eb-8234-bb438bd2e580.png" width=70% height=70%>
 - F.pad(img, pad=(n,m), value) : img의 앞에 n개, 뒤에 m개의 value를 padding하여 반환한다. 
 
-## labeling
-- np.loadtxt
-# 참고
-- coco dataset - <https://velog.io/@dkdk6638/Pytorch-COCO-Dataset>
+#### labeling
+- np.loadtxt(txt_path) : txt를 한줄한줄 읽어옴. 
+- 패딩 및 스케일링 전의 이미지크기에 맞게 anchor box size와 위치조정
+```
+x1 = w * (boxes[:, 1] - boxes[:, 3] / 2)  # 앵커박스의 좌상단x좌표 * 이미지w크기
+y1 = h * (boxes[:, 2] - boxes[:, 4] / 2)  # 앵커박스의 좌상단y좌표 * 이미지h크기
+x2 = w * (boxes[:, 1] + boxes[:, 3] / 2)  # 앵커박스의 우하단x좌표 * w크기
+y2 = h * (boxes[:, 2] + boxes[:, 4] / 2)  # 앵커박스의 우하단y좌표 * h크기
+```
+- 이는 아래그림처럼 기존 이미지에서의 anchor box의 좌상단, 우하단 좌표를 구하는 과정이다.\
+<img src="https://user-images.githubusercontent.com/70633080/106993816-e518ff80-67be-11eb-82fe-a9910b6d2d38.png" width=80% height=80%>
+
+
+### Class Dataset - collate_fn()
+: batch size만큼 데이터를 불러와서 처리하는 함수.
+- 입력(batch) : batch_size만큼의 data들을 모아놓은 tensor이다.
+- data에는 각 이미지에 대한 path, img, anchor_label 정보들이 들어있다.
+```
+paths, images, targets = list(zip(*batch))
+```
+- 이는 list(zip(data1,data2,data3, ... datan)) 과 동일하다.\
+![image](https://user-images.githubusercontent.com/70633080/106994218-b2bbd200-67bf-11eb-9367-f31b66a3c903.png)
+> 출력 : ('E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg', 'E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg')
+---------------------------------------------------------------------
+
+## 참고
+- dataset.py - <https://github.com/lulindev/yolov3-pytorch/blob/df89032d6764ba09524445d17007561aad9a1ea1/utils/datasets.py#L40>
+- cocodataset.py - <https://velog.io/@dkdk6638/Pytorch-COCO-Dataset>
