@@ -4,25 +4,42 @@ import torch.utils.data
 import argparse
 import torch.utils.tensorboard
 from tqdm import trange, tqdm
+import utils.utils
+import utils.Dataset
 import time
 import yolov3
 
+
 # Data parse
-parser =  argparse.ArgumentParser()
-parser.add_argument("epoch",type=int,default=100,help="number of epoch")
-parser.add_argument("gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--data_config", type=str, default="E:\study\sugyeong_github\object-detection\models\YOLO\config\coco.cfg", help="path to data config file")
 parser.add_argument("multiscale_training",type=bool,default=True,help="allow for multi-scale training")
+parser.add_argument("--image_size", type=int, default=416, help="size of each image")
 parser.add_argument("--batch_size", type=int, default=16, help="size of each image batch")
-parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--data_config", type=str, default="config/voc.data", help="path to data config file")
+# parser.add_argument("epoch",type=int,default=100,help="number of epoch")
+# parser.add_argument("gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
+
+# parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
 # parser.add_argument("--pretrained_weights", type=str, default='weights/darknet53.conv.74',
 #                     help="if specified starts from checkpoint model") # weight불러오기
-parser.add_argument("--image_size", type=int, default=416, help="size of each image")
 
 args = parser.parse_args() # 저장
 print(args)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+data_config = utils.parse_data_config(args.data_config) # txt경로들을 받아옴
+train_path = data_config['train']
+valid_path = data_config['valid']
+
+dataset = utils.Dataset.Dataset(train_path,args.image_size,augment=False,multiscale=args.multiscale_traning)
+dataloader = torch.utils.data.DataLoader(dataset,
+                                         batch_size=args.batch_size,
+                                         shuffle=True,
+                                         num_workers=args.num_workers,
+                                         pin_memory=True,
+                                         collate_fn=dataset.collate_fn)
 
 # model
 model = yolov3.Yolo_v3().to(device)

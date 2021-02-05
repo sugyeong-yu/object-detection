@@ -40,7 +40,7 @@ def resize(image,size):
     return F.interpolate(image.unsqueeze(0), size, mode='bilinear', align_corners=True).squeeze(0)
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, datapath: str, image_size: int, augment: bool, ):
+    def __init__(self, datapath: str, image_size: int, augment: bool, multiscale :bool ):
         # 경로가 주어지면 바로 그 경로안의 이미지들을 읽을수도 있지않을까?
         with open(datapath, 'r') as file:
             self.img_files = file.readlines()  # text파일에서 image하나당 경로를 읽어옴.
@@ -52,7 +52,7 @@ class Dataset(torch.utils.data.Dataset):
         self.image_size = image_size
         self.max_objects = 100
         self.augment = augment  # 어그먼테이션 (이미지변형)
-        self.multiscale = False
+        self.multiscale = multiscale
         # self.normalized_labels = normalized_labels
         self.batch_count = 0
 
