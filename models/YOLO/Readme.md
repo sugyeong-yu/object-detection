@@ -57,6 +57,19 @@ dataloader = torch.utils.data.DataLoader(dataset,
   4. num_workers (default = 0): data가 main process로 불러오는 것을 의미한다. (멀티프로세싱 개수)
   5. collate_fn : map-style 데이터셋에서 sample list를 batch단위로 바꾸기위해 필요한 기능이다. zero-padding이나 variable size데이터 등 data size를 맞추기위해 주로 사용한다.
 
+### schedular(torch.optim.lr_schedular)
+```
+schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
+```
+- lr schedular설정
+1. LambdaLR : lr_lambda인자로 넣어준 함수로 계산된 값을 초기 lr에 곱해 사용
+2. MultiplicativeLR : lr_lambda 인자로 넣어준 함수로 계산된 값을 매 에폭마다 이전 lr에 곱해사용한다.
+3. StepLR : step_size에 지정된 에폭수마다 이전 lr에 감마만큼 곱해 사용한다.
+4. ExponentialLR : 매 에폭마다 이전 lr에 감마만큼 곱해서 사용한다.
+
+### tqdm
+
+
 ## Dataset.py 관련 함수 및 모듈
 ----------------------------------------------------------------------------------
 ### Class Dataset - __getitem__() 
