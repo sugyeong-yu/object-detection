@@ -122,6 +122,17 @@ y2 = h * (boxes[:, 2] + boxes[:, 4] / 2)  # 앵커박스의 우하단y좌표 * h
 - 이는 아래그림처럼 기존 이미지에서의 anchor box의 좌상단, 우하단 좌표를 구하는 과정이다.\
 <img src="https://user-images.githubusercontent.com/70633080/106993816-e518ff80-67be-11eb-82fe-a9910b6d2d38.png" width=80% height=80%>
 
+
+### Class Dataset - collate_fn()
+: batch size만큼 데이터를 불러와서 처리하는 함수.
+- 입력(batch) : batch_size만큼의 data들을 모아놓은 tensor이다.
+- data에는 각 이미지에 대한 path, img, anchor_label 정보들이 들어있다.
+```
+paths, images, targets = list(zip(*batch))
+```
+- 이는 list(zip(data1,data2,data3, ... datan)) 과 동일하다.\
+![image](https://user-images.githubusercontent.com/70633080/106994218-b2bbd200-67bf-11eb-9367-f31b66a3c903.png)
+> 출력 : ('E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg', 'E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg')
 ---------------------------------------------------------------------
 
 ## 참고
