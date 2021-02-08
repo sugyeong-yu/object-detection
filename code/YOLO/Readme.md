@@ -1,6 +1,7 @@
 # YOLOV3
 # Dataload
-## train.py 관련 함수 및 모듈
+## [train.py 관련 함수 및 모듈][train]
+[train]: https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/train.py
 ### parsing
 ```
 import argparse
