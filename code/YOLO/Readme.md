@@ -72,7 +72,7 @@ schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
 
 
 ## [Dataset.py 관련 함수 및 모듈][dataset]
-[dataset] : https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/utils/Dataset.py
+[dataset]: https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/utils/Dataset.py
 ----------------------------------------------------------------------------------
 ### Class Dataset - __getitem__() 
 #### Transforms
