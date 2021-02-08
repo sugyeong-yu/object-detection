@@ -1,5 +1,6 @@
 # YOLOV3
 # Dataload
+----------------------------------------------------------------------------------
 ## [train.py 관련 함수 및 모듈][train]
 [train]: https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/train.py
 ### parsing
@@ -70,10 +71,9 @@ schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
 
 ### tqdm
 
-
+----------------------------------------------------------------------------------
 ## [Dataset.py 관련 함수 및 모듈][dataset]
 [dataset]: https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/utils/Dataset.py
-----------------------------------------------------------------------------------
 ### Class Dataset - __getitem__() 
 #### Transforms
 - torchvision.transforms.Compose()\
