@@ -144,7 +144,7 @@ class Yolo_v3(nn.Module):
         # anchor box합치기
         print(">>>>> anchor box prediction <<<<<")
         yolo_output = [anchor13, anchor26, anchor52]
-        yolo_output = torch.cat(yolo_output, 1).detach()  # 인덱스1번째 차원으로 합치기. shape: [1,10647,85]
+        yolo_output = torch.cat(yolo_output, 1).detach()  # 인덱스1번째 차원으로 합치기. shape: [1,10647,85] # 10647= 모든 앵커수 * grid
 
         # 최종 loss
         loss = loss_layer1 + loss_layer2 + loss_layer3

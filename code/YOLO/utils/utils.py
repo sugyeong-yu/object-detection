@@ -12,32 +12,54 @@ def corner(x):
     return y
 
 def NMS(pred_box,conf_thres,nms_thres):
+    # pred_box>[1,10647,85]
     # 1. conf thres보다 작은 bbox삭제
     # 2. class score 순으로 정렬
-    # 3. NMS수행 : class 별로 다음 박스와 비교하고 thres를 넘으면 동일 객체로 판별하고 0으로 만들어줌.
+    # 3. NMS수행 : class 별로 다음 박스와 비교하고 iou가 일정 thres를 넘으면 동일 객체를 detect한것으로 판별하고 0으로 만들어줌.
     # return > (x1, y1, x2, y2, object_conf, class_score, class_pred)
-    pred_box[...,:4] = corner(pred_box[...,:4]) # 점들을 코너로 바꿔줌
+    pred_box[...,:4] = corner(pred_box[...,:4]) # 점들을 코너로 바꿔줌 #[1, 10647, 85]
     output = [None for _ in range(len(pred_box))] # out shape정의
 
+    # batch마다 가져옴.  image가 1장일때, batch가 1이므로 반복문이 1번돈다.
     for img_i,img_pred in enumerate(pred_box):
+        print(img_pred.shape) #[10647, 85]
         # 1. confidence score가 thres 넘는거만 통과
-        img_pred = img_pred[img_pred[:,4] >= conf_thres]
+        img_pred = img_pred[img_pred[:,4] >= conf_thres] # True/False로 저장 #[?,85]
         if not img_pred.size(0):
             continue
 
         # score계산 (conf * class)
-        score = img_pred[:,4] * img_pred[:,5:].max(1)[0] # 클래스 점수 제일 큰 클래스와 conf를 곱한다.
+        score = img_pred[:,4] * img_pred[:,5:].max(1)[0] # 클래스 점수 제일 큰 클래스값와 conf를 곱한다.
 
         # 정렬 ( 큰순으로 정렬하기 위해서 score에 -를 붙임)
         img_pred = img_pred[(-score).argsort()] # argsort(dim=1) > 행마다 각 열에서 값이 낮은 순으로 인덱스로 저장., img_pred는 score큰 순으로 정렬
         class_confs, class_preds = img_pred[:, 5:].max(1, keepdim=True)#(값, 인덱스) keepdim=True > 해당차원을 제외하고 출력tensor는 동일한 크기의 dim을 유지, 가장 큰 class score과 인덱스를 출력
-        detections = torch.cat((img_pred[:, :5], class_confs.float(), class_preds.float()), 1) # 열을 기준으로 합침. 열이 늘어남.
+        detections = torch.cat((img_pred[:, :5], class_confs.float(), class_preds.float()), 1) # 열을 기준으로 합침. 열이 늘어남. #[?,7]
 
+
+        keep_box = []
         # anchorbox가 있는 만큼 반복문 실행
-        # while detections.size(0):
+        while detections.size(0):
+            # score가 가장높은 첫번째 박스와 가장 iou가 큰 anchor box를 찾는다.
+            large_iou = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4]) > nms_thres
+            label_match = detections[0,-1] == detections[:,-1] # score가장큰 anchor box와 class label이 같은가 True/False
 
+            # iou가 thres를 넘고 class label이 동일한 anchor box의 confidence score 를 weights라는 변수에 저장
+            invalid = large_iou & label_match # 둘다 참일때만 True ( 조건에 맞는 box들만 받아오기 위함)
+            weights = detections[invalid, 4:5] # invalid가 True인 행? 의 confidence
 
+            # [0,:4] > 0번index의 batch에서 index3번까지의 anchorbox를 선택 >>따라서 처음 배치shape만 사라지고 shape은 같음
+            # confidence score 별로 좌표값을 곱해 더함으로써 score가 가장큰 box의 좌표값을 조정하여 최종 좌표값을 구함.
+            detections[0, :4] = (weights * detections[invalid, :4]).sum(0) / weights.sum() # sum(0) > 각 행마다 요소별로 더함(x는 x끼리 y는 y끼리...)
+            keep_box += [detections[0]]
+            detections = detections[~invalid] # 이제 나머지 중에서, 즉 False였던 것 중에서 시작.
+        if keep_box:
+            output[img_i] = torch.stack(keep_box) # list -> torch로 변경
 
+        return output
+
+test = torch.zeros(1,10647,85)
+NMS(test,1,1)
 
 def bbox_wh_iou(wh1, wh2):
     print("wh1:",wh1)
