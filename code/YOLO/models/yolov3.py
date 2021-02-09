@@ -1,10 +1,14 @@
+import numpy as np
 import torch
 from torch import nn
 from models.anchor_detect import YoloDetection
 
+
 def DBL(in_c, out_c, kernel_size, stride, padding):
-    dbl_block = nn.Sequential(nn.Conv2d(in_c, out_c, kernel_size=kernel_size, padding=padding, stride=stride),
-                              nn.BatchNorm2d(out_c),
+    module1 = nn.Conv2d(in_c, out_c, kernel_size=kernel_size, padding=padding, stride=stride)
+    module2 = nn.BatchNorm2d(out_c)
+    dbl_block = nn.Sequential(module1,
+                              module2,
                               nn.LeakyReLU())
     return dbl_block
 
@@ -72,7 +76,7 @@ class Darknet53(nn.Module):
 
 
 class Yolo_v3(nn.Module):
-    def __init__(self,image_size:int, class_num :int ):
+    def __init__(self, image_size: int, class_num: int):
         super(Yolo_v3, self).__init__()
         self.class_num = class_num
         self.img_size = image_size
@@ -113,7 +117,7 @@ class Yolo_v3(nn.Module):
         out1 = self.conv_set1(res5)
         first = self.conv_final1(out1)
 
-        anchor13, loss_layer1 = self.anchor_box1(first,targets)  # [1,507,85]
+        anchor13, loss_layer1 = self.anchor_box1(first, targets)  # [1,507,85]
 
         # 2번째 feature
         out2 = self.conv_layer1(out1)
@@ -123,7 +127,7 @@ class Yolo_v3(nn.Module):
         out2 = self.conv_set2(out2)
         second = self.conv_final2(out2)
 
-        anchor26, loss_layer2 = self.anchor_box2(second,targets)  # [1, 2028, 85]
+        anchor26, loss_layer2 = self.anchor_box2(second, targets)  # [1, 2028, 85]
 
         # 3번째 feature
         out3 = self.conv_layer2(out2)
@@ -133,7 +137,7 @@ class Yolo_v3(nn.Module):
         out3 = self.conv_set3(out3)
         thrid = self.conv_final3(out3)
 
-        anchor52, loss_layer3 = self.anchor_box3(thrid,targets)  # [1, 8112, 85]
+        anchor52, loss_layer3 = self.anchor_box3(thrid, targets)  # [1, 8112, 85]
 
         # feature 크기출력
         print(">>>>> featuremap extract <<<<<")
@@ -165,9 +169,115 @@ class Yolo_v3(nn.Module):
                                nn.Conv2d(in_c * 2, out_c, 1, 1, 0))
         return result
 
+    def load_darknet_weights(self, weights_path: str):
+        # Open the weights file
+        with open(weights_path, "rb") as f:
+            _ = np.fromfile(f, dtype=np.int32, count=5)  # First five are header values (0~2: version, 3~4: seen)
+            weights = np.fromfile(f, dtype=np.float32)  # The rest are weights
+
+        ptr = 0
+        # Load Darknet-53 weights
+        for key, module in self.darknet53.items():
+            module_type = key.split('_')[0]
+
+            if module_type == 'conv':
+                ptr = self.load_bn_weights(module[1], weights, ptr)  # module[1]은 DBL에서의 batch
+                ptr = self.load_conv_weights(module[0], weights, ptr)  # [0]은 DBL에서의 conv
+
+            elif module_type == 'residual':
+                for i in range(2):
+                    ptr = self.load_bn_weights(module[i][1], weights, ptr)
+                    ptr = self.load_conv_weights(module[i][0], weights, ptr)
+
+        # Load YOLOv3 weights
+        if weights_path.find('yolov3.weights') != -1:
+            # conv_set은 DBL5번한ㄴ conv_set 함수
+            # conv_final은 DBL , conv 한번씩
+            for module in self.conv_block3:
+                # DBL이 하나씩 순차적으로.
+                ptr = self.load_bn_weights(module[1], weights, ptr) # module[1]은 DBL에서의 batch
+                ptr = self.load_conv_weights(module[0], weights, ptr) # [0]은 DBL에서의 conv
+
+            ptr = self.load_bn_weights(self.conv_final3[0][1], weights, ptr) # conv_final[0]은 DBL, [0][1]은 DBL에서의 batch
+            ptr = self.load_conv_weights(self.conv_final3[0][0], weights, ptr) #[0][1]은 DBL에서의 conv
+            ptr = self.load_conv_bias(self.conv_final3[1], weights, ptr) # conv_final[1]은 conv layer
+            ptr = self.load_conv_weights(self.conv_final3[1], weights, ptr)
+
+            ptr = self.load_bn_weights(self.upsample2[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.upsample2[0][0], weights, ptr)
+
+            for module in self.conv_block2:
+                ptr = self.load_bn_weights(module[1], weights, ptr)
+                ptr = self.load_conv_weights(module[0], weights, ptr)
+
+            ptr = self.load_bn_weights(self.conv_final2[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final2[0][0], weights, ptr)
+            ptr = self.load_conv_bias(self.conv_final2[1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final2[1], weights, ptr)
+
+            ptr = self.load_bn_weights(self.upsample1[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.upsample1[0][0], weights, ptr)
+
+            for module in self.conv_block1:
+                ptr = self.load_bn_weights(module[1], weights, ptr)
+                ptr = self.load_conv_weights(module[0], weights, ptr)
+
+            ptr = self.load_bn_weights(self.conv_final1[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final1[0][0], weights, ptr)
+            ptr = self.load_conv_bias(self.conv_final1[1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final1[1], weights, ptr)
+
+    # Load BN bias, weights, running mean and running variance
+    def load_bn_weights(self, bn_layer, weights, ptr: int):
+        num_bn_biases = bn_layer.bias.numel()  # bias.numel > layer의 weight 수를 얻는다.
+
+        # Bias
+        # ptr : 시작점, ptr + num_bn_biases : 종료점 (시작+불러올 weight수)
+        bn_biases = torch.from_numpy(weights[ptr: ptr + num_bn_biases]).view_as(bn_layer.bias)  # 불러올 새 편향
+        bn_layer.bias.data.copy_(bn_biases)  # 복사.
+        ptr += num_bn_biases
+        # Weight
+        bn_weights = torch.from_numpy(weights[ptr: ptr + num_bn_biases]).view_as(bn_layer.weight)
+        bn_layer.weight.data.copy_(bn_weights)
+        ptr += num_bn_biases
+        # Running Mean
+        bn_running_mean = torch.from_numpy(weights[ptr: ptr + num_bn_biases]).view_as(bn_layer.running_mean)
+        bn_layer.running_mean.data.copy_(bn_running_mean)
+        ptr += num_bn_biases
+        # Running Var
+        bn_running_var = torch.from_numpy(weights[ptr: ptr + num_bn_biases]).view_as(bn_layer.running_var)
+        bn_layer.running_var.data.copy_(bn_running_var)
+        ptr += num_bn_biases
+
+        # weight를 몇번째 index까지 사용했는지를 나타내는 정수 ptr 을 반환
+        return ptr
+
+    # Load convolution bias
+    def load_conv_bias(self, conv_layer, weights, ptr: int):
+        num_biases = conv_layer.bias.numel()
+
+        conv_biases = torch.from_numpy(weights[ptr: ptr + num_biases]).view_as(conv_layer.bias) # convlayer의 편향
+        conv_layer.bias.data.copy_(conv_biases)
+        ptr += num_biases
+
+        return ptr
+
+    # Load convolution weights
+    def load_conv_weights(self, conv_layer, weights, ptr: int):
+        num_weights = conv_layer.weight.numel()
+
+        conv_weights = torch.from_numpy(weights[ptr: ptr + num_weights])
+        conv_weights = conv_weights.view_as(conv_layer.weight)
+        conv_layer.weight.data.copy_(conv_weights)
+        ptr += num_weights
+
+        return ptr
 
 # 입력이미지 랜덤생성
 # input_image=torch.randn(1,3,416,416)
 # print(input_image.shape)
 #
 # Yolo_v3().forward(x=input_image)
+# model=Yolo_v3(416,80)
+# for name, module in model.named_modules():
+#     print("name:",name)

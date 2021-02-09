@@ -18,6 +18,14 @@ def parse_data_config(path: str):
         options[key.strip()] = value.strip()  # dict반환
     return options
 
+def load_classes(path: str):
+    """클래스 이름을 로드한다."""
+    with open(path, "r") as f:
+        names = f.readlines()
+    for i, name in enumerate(names):
+        names[i] = name.strip()
+    return names
+
 
 def pad_to_square(image, pad_value=0):
     _, h, w = image.shape
@@ -147,9 +155,8 @@ class Dataset(torch.utils.data.Dataset):
         # return : (img의 경로, resize한 img, resize하기전 img에 대한 anchor box정보들)
         return paths, images, targets
 
-
-# path = "E:\study\sugyeong_github\object-detection\models\YOLO\data\coco\\train.txt"
-# batch1 = Dataset(path, 416, False).__getitem__(1)
+# path = "../../data/coco/train.txt"
+# batch1 = Dataset(path, 416, False,False).__getitem__(1)
 # batch2 = Dataset(path, 416, False).__getitem__(2)
 # path,img,targets= list(zip(batch1,batch2))
 # print(path)
