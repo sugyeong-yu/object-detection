@@ -70,7 +70,31 @@ schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
 4. ExponentialLR : 매 에폭마다 이전 lr에 감마만큼 곱해서 사용한다.
 
 ### tqdm
+- 작업시간이 얼마나 남았는지 확인하고 싶을때 진행상태바를 만들 수 있는 라이브러리이다.
+```
+conda install tqdm
+```
+```
+from tqdm import tqdm_notebook, trange
+import time
 
+for a in tqdm_notebook(range(5),desc = '1그룹'):
+    for b in tqdm_notebook(range(100), desc = '두번째'):
+        time.sleep(0.01)   
+```
+![image](https://user-images.githubusercontent.com/70633080/107339225-c76dd200-6aff-11eb-8ddc-005803a2fa23.png)
+- tqdm_notebook(range(5))대신 trange(5)도 가능 또는 tqdm(range(5))
+```
+loss_log = tqdm(total=0, position=2, bar_format= '{desc}',leave=True)
+
+for i in range(10):
+    time.sleep(0.1)
+    loss_log.set_description_str('Loss: {:.6f}'.format(1)) # 진행바의 이름을 바꿔줄 수 있음
+    loss_log.update(2)
+```
+- total : 전체 반복량, bar_format : str , leave : bool, default로 True (진행상태에서 잔상이남음)
+- set_description_str : 진행바의 이름을 바꿔줄 수 있음
+- update : 괄호안 숫자만큼 게이지 update
 ----------------------------------------------------------------------------------
 ## [Dataset.py 관련 함수 및 모듈][dataset]
 [dataset]: https://github.com/sugyeong-yu/object-detection/blob/main/code/YOLO/utils/Dataset.py
