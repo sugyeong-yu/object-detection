@@ -59,6 +59,28 @@ dataloader = torch.utils.data.DataLoader(dataset,
   4. num_workers (default = 0): data가 main process로 불러오는 것을 의미한다. (멀티프로세싱 개수)
   5. collate_fn : map-style 데이터셋에서 sample list를 batch단위로 바꾸기위해 필요한 기능이다. zero-padding이나 variable size데이터 등 data size를 맞추기위해 주로 사용한다.
 
+### model (torch.nn.Module)
+```
+model.apply(init_weights_normal) # model.apply(f) > 현재 모듈의 모든 서브모듈에 해당함수f를 적용한다. (모델파라미터 초기화할때 많이사용)
+if args.pretrained_weights.endswith('.pth'):
+    model.load_state_dict(torch.load(args.pretrained_weights))
+else:
+    model.load_darknet_weights(args.pretrained_weights)
+```
+- model.parameters() : 모델의 학습가능한 매개변수 ( 가중치, bias )
+- model.state_dict : 각 계층을 매개변수 tensor로 mapping되는 python dictionary객체\
+ex)\ 
+![image](https://user-images.githubusercontent.com/70633080/107351542-1589d200-6b0e-11eb-9c8c-431ed57c8ff2.png)
+  - state_dict 저장하기 : ``` torch.save(model.state_dict(),path)```
+  - state_dict 불러오기 : 
+```
+model = TheModelClass(*args, **kwargs)
+model.load_state_dict(torch.load(PATH))
+model.eval()
+```
+- 모델 저장하기 : ```path = './weights/'```, ```torch.save(model,path)```
+- 모델 불러오기 : ``` torch.load(path) ```
+
 ### schedular(torch.optim.lr_schedular)
 ```
 schedular = torch.optim.lr_scheduler.StepLR(optimizer,step_size=10,gamma=0.8)
