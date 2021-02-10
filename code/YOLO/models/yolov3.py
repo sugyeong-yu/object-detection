@@ -33,36 +33,36 @@ class Darknet53(nn.Module):
     def __init__(self, block):
         super(Darknet53, self).__init__()
 
-        self.conv1 = DBL(3, 32, 3, 1, 1)
-        self.conv2 = DBL(32, 64, 3, 2, 1)
+        self.conv_1 = DBL(3, 32, 3, 1, 1)
+        self.conv_2 = DBL(32, 64, 3, 2, 1)
 
         self.res_block1 = self.num_block(block, 64, num=1)
-        self.conv3 = DBL(64, 128, 3, 2, 1)
+        self.conv_3 = DBL(64, 128, 3, 2, 1)
 
         self.res_block2 = self.num_block(block, 128, 2)
-        self.conv4 = DBL(128, 256, 3, 2, 1)
+        self.conv_4 = DBL(128, 256, 3, 2, 1)
 
         self.res_block3 = self.num_block(block, 256, 8)
-        self.conv5 = DBL(256, 512, 3, 2, 1)  # 3*3 conv하면 마진1 > 패딩으로 채워줌
+        self.conv_5 = DBL(256, 512, 3, 2, 1)  # 3*3 conv하면 마진1 > 패딩으로 채워줌
 
         self.res_block4 = self.num_block(block, 512, 8)
-        self.conv6 = DBL(512, 1024, 3, 2, 1)
+        self.conv_6 = DBL(512, 1024, 3, 2, 1)
 
         self.res_block5 = self.num_block(block, 1024, 4)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
+        x = self.conv_1(x)
+        x = self.conv_2(x)
         x = self.res_block1(x)
-        x = self.conv3(x)
+        x = self.conv_3(x)
         x = self.res_block2(x)
-        x = self.conv4(x)
+        x = self.conv_4(x)
         x = self.res_block3(x)
         feature3 = x
-        x = self.conv5(x)
+        x = self.conv_5(x)
         x = self.res_block4(x)
         feature2 = x
-        x = self.conv6(x)
+        x = self.conv_6(x)
         x = self.res_block5(x)
         feature1 = x
 
@@ -177,36 +177,39 @@ class Yolo_v3(nn.Module):
 
         ptr = 0
         # Load Darknet-53 weights
-        for key, module in self.darknet53.items():
-            module_type = key.split('_')[0]
-
+        for name, modules in model.named_modules():
+            print("name:", name)
+            module_type = name.split('_')[0]
             if module_type == 'conv':
-                ptr = self.load_bn_weights(module[1], weights, ptr)  # module[1]은 DBL에서의 batch
-                ptr = self.load_conv_weights(module[0], weights, ptr)  # [0]은 DBL에서의 conv
+                if str(type(modules)) == "<class 'torch.nn.modules.container.Sequential'>":
+                    print(modules[0])
+                    ptr = self.load_bn_weights(modules[1], weights, ptr)  # module[1]은 DBL에서의 batch
+                    ptr = self.load_conv_weights(modules[0], weights, ptr)  # [0]은 DBL에서의 conv
 
-            elif module_type == 'residual':
-                for i in range(2):
-                    ptr = self.load_bn_weights(module[i][1], weights, ptr)
-                    ptr = self.load_conv_weights(module[i][0], weights, ptr)
-
+            if module_type == 'res':
+                if str(type(modules)) == "<class 'torch.nn.modules.container.Sequential'>":
+                    if len(modules) == 3:
+                        # 이거 안되면 레스넷 시퀀셜로 묶고 [i][0] 식으로 진행.
+                        ptr = self.load_bn_weights(modules[1], weights, ptr)
+                        ptr = self.load_conv_weights(modules[0], weights, ptr)
         # Load YOLOv3 weights
         if weights_path.find('yolov3.weights') != -1:
             # conv_set은 DBL5번한ㄴ conv_set 함수
             # conv_final은 DBL , conv 한번씩
-            for module in self.conv_block3:
+            for module in self.conv_set1:
                 # DBL이 하나씩 순차적으로.
                 ptr = self.load_bn_weights(module[1], weights, ptr) # module[1]은 DBL에서의 batch
                 ptr = self.load_conv_weights(module[0], weights, ptr) # [0]은 DBL에서의 conv
 
-            ptr = self.load_bn_weights(self.conv_final3[0][1], weights, ptr) # conv_final[0]은 DBL, [0][1]은 DBL에서의 batch
-            ptr = self.load_conv_weights(self.conv_final3[0][0], weights, ptr) #[0][1]은 DBL에서의 conv
-            ptr = self.load_conv_bias(self.conv_final3[1], weights, ptr) # conv_final[1]은 conv layer
-            ptr = self.load_conv_weights(self.conv_final3[1], weights, ptr)
+            ptr = self.load_bn_weights(self.conv_final1[0][1], weights, ptr) # conv_final[0]은 DBL, [0][1]은 DBL에서의 batch
+            ptr = self.load_conv_weights(self.conv_final1[0][0], weights, ptr) #[0][1]은 DBL에서의 conv
+            ptr = self.load_conv_bias(self.conv_final1[1], weights, ptr) # conv_final[1]은 conv layer
+            ptr = self.load_conv_weights(self.conv_final1[1], weights, ptr)
 
-            ptr = self.load_bn_weights(self.upsample2[0][1], weights, ptr)
-            ptr = self.load_conv_weights(self.upsample2[0][0], weights, ptr)
+            ptr = self.load_bn_weights(self.upsampling1[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.upsampling1[0][0], weights, ptr)
 
-            for module in self.conv_block2:
+            for module in self.conv_set2:
                 ptr = self.load_bn_weights(module[1], weights, ptr)
                 ptr = self.load_conv_weights(module[0], weights, ptr)
 
@@ -215,17 +218,17 @@ class Yolo_v3(nn.Module):
             ptr = self.load_conv_bias(self.conv_final2[1], weights, ptr)
             ptr = self.load_conv_weights(self.conv_final2[1], weights, ptr)
 
-            ptr = self.load_bn_weights(self.upsample1[0][1], weights, ptr)
-            ptr = self.load_conv_weights(self.upsample1[0][0], weights, ptr)
+            ptr = self.load_bn_weights(self.upsampling2[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.upsampling2[0][0], weights, ptr)
 
-            for module in self.conv_block1:
+            for module in self.conv_set3:
                 ptr = self.load_bn_weights(module[1], weights, ptr)
                 ptr = self.load_conv_weights(module[0], weights, ptr)
 
-            ptr = self.load_bn_weights(self.conv_final1[0][1], weights, ptr)
-            ptr = self.load_conv_weights(self.conv_final1[0][0], weights, ptr)
-            ptr = self.load_conv_bias(self.conv_final1[1], weights, ptr)
-            ptr = self.load_conv_weights(self.conv_final1[1], weights, ptr)
+            ptr = self.load_bn_weights(self.conv_final3[0][1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final3[0][0], weights, ptr)
+            ptr = self.load_conv_bias(self.conv_final3[1], weights, ptr)
+            ptr = self.load_conv_weights(self.conv_final3[1], weights, ptr)
 
     # Load BN bias, weights, running mean and running variance
     def load_bn_weights(self, bn_layer, weights, ptr: int):
@@ -278,6 +281,19 @@ class Yolo_v3(nn.Module):
 # print(input_image.shape)
 #
 # Yolo_v3().forward(x=input_image)
-# model=Yolo_v3(416,80)
+# model=Darknet53(Res_unit)
 # for name, module in model.named_modules():
 #     print("name:",name)
+#     module_type = name.split('_')[0]
+#     if module_type == 'conv':
+#         if str(type(module)) == "<class 'torch.nn.modules.container.Sequential'>":
+#               print(module[0])
+#
+#     if module_type == 'res':
+#         if str(type(module)) == "<class 'torch.nn.modules.container.Sequential'>":
+#             if len(module) == 3 :
+#                 print(module)
+
+model=Yolo_v3(416,80)
+for module in model.conv_set1:
+    print("module:", module[0])
