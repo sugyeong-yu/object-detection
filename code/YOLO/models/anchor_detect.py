@@ -39,7 +39,7 @@ class YoloDetection(nn.Module):
 
         # grid 나눈거에 맞춰서 anchor크기도 맞춰주기 ex) 4 -> 2
         grid_anchor = torch.as_tensor([(anchor_w / stride, anchor_h / stride) for anchor_w, anchor_h in self.anchor],
-                                      dtype=float)
+                                      dtype=torch.float)
 
         anchor_w = grid_anchor[:, 0].view((1, num_anchor, 1, 1))
         anchor_h = grid_anchor[:, 1].view((1, num_anchor, 1, 1))  # 왜이런 형태로?

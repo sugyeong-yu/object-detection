@@ -177,7 +177,7 @@ class Yolo_v3(nn.Module):
 
         ptr = 0
         # Load Darknet-53 weights
-        for name, modules in model.named_modules():
+        for name, modules in self.darknet53.named_modules():
             print("name:", name)
             module_type = name.split('_')[0]
             if module_type == 'conv':
@@ -193,11 +193,12 @@ class Yolo_v3(nn.Module):
                         ptr = self.load_bn_weights(modules[1], weights, ptr)
                         ptr = self.load_conv_weights(modules[0], weights, ptr)
         # Load YOLOv3 weights
+        # conv_set,conv_final,upsampling에 대해서만 전이학습
         if weights_path.find('yolov3.weights') != -1:
             # conv_set은 DBL5번한ㄴ conv_set 함수
             # conv_final은 DBL , conv 한번씩
             for module in self.conv_set1:
-                # DBL이 하나씩 순차적으로.
+                # module에는 conv_set의 DBL5개 중 하나씩 순차적으로.
                 ptr = self.load_bn_weights(module[1], weights, ptr) # module[1]은 DBL에서의 batch
                 ptr = self.load_conv_weights(module[0], weights, ptr) # [0]은 DBL에서의 conv
 
@@ -293,7 +294,7 @@ class Yolo_v3(nn.Module):
 #         if str(type(module)) == "<class 'torch.nn.modules.container.Sequential'>":
 #             if len(module) == 3 :
 #                 print(module)
-
-model=Yolo_v3(416,80)
-for module in model.conv_set1:
-    print("module:", module[0])
+#
+# model=Yolo_v3(416,80)
+# for module in model.conv_set1:
+#     print("module:", module[0])
