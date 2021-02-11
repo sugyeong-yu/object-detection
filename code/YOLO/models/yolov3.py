@@ -103,7 +103,7 @@ class Yolo_v3(nn.Module):
         self.conv_final3 = self.conv_final(128, 255)
         self.anchor_box3 = YoloDetection(anchor['grid52'], self.img_size, self.class_num)
 
-    def forward(self, x, target=None):
+    def forward(self, x, target):
         print("darknet53 ")
         res5, res4, res3 = self.darknet53(x)
 
@@ -117,7 +117,7 @@ class Yolo_v3(nn.Module):
         out1 = self.conv_set1(res5)
         first = self.conv_final1(out1)
 
-        anchor13, loss_layer1 = self.anchor_box1(first, targets)  # [1,507,85]
+        anchor13, loss_layer1 = self.anchor_box1(first, target)  # [1,507,85]
 
         # 2번째 feature
         out2 = self.conv_layer1(out1)
@@ -127,7 +127,7 @@ class Yolo_v3(nn.Module):
         out2 = self.conv_set2(out2)
         second = self.conv_final2(out2)
 
-        anchor26, loss_layer2 = self.anchor_box2(second, targets)  # [1, 2028, 85]
+        anchor26, loss_layer2 = self.anchor_box2(second, target)  # [1, 2028, 85]
 
         # 3번째 feature
         out3 = self.conv_layer2(out2)
@@ -137,7 +137,7 @@ class Yolo_v3(nn.Module):
         out3 = self.conv_set3(out3)
         thrid = self.conv_final3(out3)
 
-        anchor52, loss_layer3 = self.anchor_box3(thrid, targets)  # [1, 8112, 85]
+        anchor52, loss_layer3 = self.anchor_box3(thrid, target)  # [1, 8112, 85]
 
         # feature 크기출력
         print(">>>>> featuremap extract <<<<<")

@@ -21,8 +21,10 @@ class YoloDetection(nn.Module):
         num_anchor = len(self.anchor)
         grid_size = x.size(2)  # 13-> 26-> 52
 
-        pred = (x.view(batch_size, num_anchor, 5 + self.numclass, grid_size, grid_size)
-                .permute(0, 1, 3, 4, 2).contiguous())
+        pred = (
+            x.view(batch_size, num_anchor,self.numclass + 5, grid_size, grid_size)
+                .permute(0, 1, 3, 4, 2).contiguous()
+        )
         print(pred.shape)  # batch, anchor,img,img,5+class
 
         bx = torch.sigmoid(pred[..., 0])  # 시작은 그냥 특징맵의 x좌표로 변화량 계산 -> 학습을 통해 변화
@@ -64,7 +66,7 @@ class YoloDetection(nn.Module):
         #             print("target is none")
         #             return output, 0
 
-        iou_score, class_mask,obj_mask, no_obj_mask, tx, ty, tw, th, tcls, tconf = matching_target(pred_bbox,targets,pred_cls,self.anchor,self.ignore_thres)
+        iou_score, class_mask,obj_mask, no_obj_mask, tx, ty, tw, th, tcls, tconf = matching_target(pred_bbox,targets,pred_cls,grid_anchor,self.ignore_thres)
 
         #loss 계산 예측변화량 - 실제변화량
         loss_x = self.mse_loss(bx[obj_mask], tx[obj_mask])

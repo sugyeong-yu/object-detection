@@ -103,6 +103,7 @@ def bbox_iou(box1,box2,x1y1x2y2=True):
 def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
     batch_size = pred_box.size(0) #배치사이즈 , 1
+    print("batxch",batch_size)
     num_anchor = pred_box.size(1) #앵커박스개수 ,3
     num_class = pred_cls.size(-1) #class 개수
     grid_size = pred_box.size(2) #grid size 13->26->52
@@ -134,8 +135,8 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     gi,gj = gxy.long().t() # 물체의 실제 중심좌표. 따라서 best_iou_idxs의 길이? 개수 와 동일하다.
 
     # set masks
-    obj_mask[batch_size,best_iou_idxs,gj,gi] = 1 #물체가 있는 곳을 1로 만들어줌 ex) 0번쨰 물체의 anchor idx는 0이고 실제 중심좌표는 1,1일때 0의 1,1을 True로.
-    no_obj_mask[batch_size, best_iou_idxs, gj, gi] = 0 # 물체가 있는 곳을 0으로 만들어줌
+    obj_mask[batch,best_iou_idxs,gj,gi] = 1 #물체가 있는 곳을 1로 만들어줌 ex) 0번쨰 물체의 anchor idx는 0이고 실제 중심좌표는 1,1일때 0의 1,1을 True로.
+    no_obj_mask[batch, best_iou_idxs, gj, gi] = 0 # 물체가 있는 곳을 0으로 만들어줌
 
     # iou가 임계값보다 클 경우, no_obj_mask 에서 0으로 만들기 (물체가 있다고 판단)
     for i, anchor_ious in enumerate(iou.t()):
@@ -151,8 +152,8 @@ def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     tcls[batch,best_iou_idxs,gj,gi,target_labels] = 1 # 물체마다 해당하는 anchor인덱스에서 실제물체의 좌표에 1을 넣어줌.
 
     # 물체에 해당하는 ioubox 인덱스의 feature map에서 물체의 실제좌표의 클래스 = 예측한것과 target이 맞는경우 1, 틀리면 0
-    class_mask[batch_size, best_iou_idxs, gj, gi] = (pred_cls[batch_size, best_iou_idxs, gj, gi].argmax(-1) == target_labels).float()
-    iou_score[batch_size, best_iou_idxs, gj, gi] = bbox_iou(pred_box[batch_size, best_iou_idxs, gj, gi], target_box, x1y1x2y2=False) # bbox iou계싼
+    class_mask[batch, best_iou_idxs, gj, gi] = (pred_cls[batch, best_iou_idxs, gj, gi].argmax(-1) == target_labels).float()
+    iou_score[batch, best_iou_idxs, gj, gi] = bbox_iou(pred_box[batch, best_iou_idxs, gj, gi], target_box, x1y1x2y2=False) # bbox iou계싼
 
     tconf = obj_mask.float()
     return iou_score, class_mask, obj_mask, no_obj_mask, tx, ty, tw,th, tcls, tconf

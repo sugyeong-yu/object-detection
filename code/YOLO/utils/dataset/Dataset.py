@@ -37,7 +37,7 @@ def pad_to_square(image, pad_value=0):
         bottom = diff - diff // 2
         pad = [0, 0, top, bottom]  # 한 열에 대해 각각 앞 뒤 를 top, bottom 개수만큼 채워준다. ex) (1,1) -> [(0,0),(1,1),(0,0)]
     else:
-        left = difference // 2
+        left = diff // 2
         right = diff - diff // 2
         pad = [left, right, 0, 0]  # 한 행에 대해 각각 앞 뒤 를 left, right 개수만큼 채워준다. ex) (1,1) -> (0,1,1,0)
 
@@ -48,26 +48,25 @@ def resize(image,size):
     return F.interpolate(image.unsqueeze(0), size, mode='bilinear', align_corners=True).squeeze(0)
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, datapath: str, image_size: int, augment: bool, multiscale :bool ):
-        # 경로가 주어지면 바로 그 경로안의 이미지들을 읽을수도 있지않을까?
-        with open(datapath, 'r') as file:
-            self.img_files = file.readlines()  # text파일에서 image하나당 경로를 읽어옴.
+    def __init__(self, list_path: str, image_size: int, augment: bool, multiscale: bool, normalized_labels=True):
+        with open(list_path, 'r') as file:
+            self.image_files = file.readlines()
 
-        # path ./data/coco/images/val2014/COCO_val2014_000000580607.jpg\n' ->./data/coco/labels/val2014/COCO_val2014_000000581736.txt\n'
         self.label_files = [path.replace('images', 'labels').replace('.png', '.txt').replace('.jpg', '.txt')
-                                .replace('JPEGImages', 'labels') for path in self.img_files]
-
+                                .replace('JPEGImages', 'labels') for path in self.image_files]
         self.image_size = image_size
         self.max_objects = 100
-        self.augment = augment  # 어그먼테이션 (이미지변형)
+        self.augment = augment
         self.multiscale = multiscale
-        # self.normalized_labels = normalized_labels
+        self.normalized_labels = normalized_labels
         self.batch_count = 0
 
     def __getitem__(self, index):
-        # 1. image처리
-        image_path = self.img_files[index].rstrip() # rstrip()은 문자열의 지정된 문자열의 끝을 (기본값은 공백) 삭제
-        # img augmentation
+        # 1. Image
+        # -----------------------------------------------------------------------------------
+        image_path = self.image_files[index].rstrip()
+
+        # Apply augmentations
         if self.augment:
             transforms = torchvision.transforms.Compose([
                 torchvision.transforms.ColorJitter(brightness=1.5, saturation=1.5, hue=0.1),
@@ -76,83 +75,78 @@ class Dataset(torch.utils.data.Dataset):
         else:
             transforms = torchvision.transforms.ToTensor()
 
-        # tensor에서 img추출하기
-        image = transforms(Image.open(image_path).convert('RGB'))  # IMG는 pillow에서 제공. convert로 RGB로 전환
-        _, h, w = image.shape  # torch.Size([3, 480, 640])
+        # Extract image as PyTorch tensor
+        image = transforms(Image.open(image_path).convert('RGB'))
 
-        # img 정사각형?으로 만들어주기
+        _, h, w = image.shape
+        h_factor, w_factor = (h, w) if self.normalized_labels else (1, 1)
+
+        # Pad to square resolution
         image, pad = pad_to_square(image)
-        _, pad_h, pad_w = image.shape
+        _, padded_h, padded_w = image.shape
 
-        # # 2. label처리
+        # 2. Label
+        # -----------------------------------------------------------------------------------
         label_path = self.label_files[index].rstrip()
 
         targets = None
         if os.path.exists(label_path):
-            # np.loadtxt : ("파일경로",파일구분자,데이터타입) 을 지정하여 파일을 읽어와 데이터변수에 array로 넣어준다.
-            # 8*(class, x,y,w,h) 형태로 반환
-            boxes = torch.from_numpy(np.loadtxt(label_path).reshape(-1, 5))  # 5열의 형태로 만든후 array -> tensor
+            boxes = torch.from_numpy(np.loadtxt(label_path).reshape(-1, 5))
 
-            # 패딩 및 스케일링 전의 이미지크기에 맞게 앵커박스크기와 위치를 조정해준다.
-            # ground truth의 앵커박스의 크기와 좌표는 grid size 1일때의 기준이다.
-            x1 = w * (boxes[:, 1] - boxes[:, 3] / 2)  # 앵커박스의 좌상단x좌표 * 이미지w크기
-            y1 = h * (boxes[:, 2] - boxes[:, 4] / 2)  # 앵커박스의 좌상단y좌표 * 이미지h크기
-            x2 = w * (boxes[:, 1] + boxes[:, 3] / 2)  # 앵커박스의 우하단x좌표 * w크기
-            y2 = h * (boxes[:, 2] + boxes[:, 4] / 2)  # 앵커박스의 우하단y좌표 * h크기
+            # Extract coordinates for unpadded + unscaled image
+            x1 = w_factor * (boxes[:, 1] - boxes[:, 3] / 2)
+            y1 = h_factor * (boxes[:, 2] - boxes[:, 4] / 2)
+            x2 = w_factor * (boxes[:, 1] + boxes[:, 3] / 2)
+            y2 = h_factor * (boxes[:, 2] + boxes[:, 4] / 2)
 
-            # 앵커박스에도 padding해주기
+            # Adjust for added padding
             x1 += pad[0]
             y1 += pad[2]
             x2 += pad[1]
             y2 += pad[3]
 
             # Returns (x, y, w, h)
-            boxes[:, 1] = ((x1 + x2) / 2) / pad_w
-            boxes[:, 2] = ((y1 + y2) / 2) / pad_h
-            boxes[:, 3] *= w / pad_w
-            boxes[:, 4] *= h / pad_h
+            boxes[:, 1] = ((x1 + x2) / 2) / padded_w
+            boxes[:, 2] = ((y1 + y2) / 2) / padded_h
+            boxes[:, 3] *= w_factor / padded_w
+            boxes[:, 4] *= h_factor / padded_h
 
             targets = torch.zeros((len(boxes), 6))
-            targets[:, 1:] = boxes  # targets[:,0:1] 은 0으로 채워져있음.(cllate_fn에서 인덱스부여) 나머지는 class, x, y, w, h
-            # print(targets)  # 8,6
+            targets[:, 1:] = boxes
 
         # Apply augmentations
         if self.augment:
             if np.random.random() < 0.5:
                 image, targets = horisontal_flip(image, targets)
-        # print(targets)
+
         return image_path, image, targets
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.image_files)
 
     def collate_fn(self, batch):
-        # __getitem__의 반환을 입력으로 받아옴 targets는 (0,class,x,y,w,h)*8
-        # batch_size만큼의 path, img, target(bbox)를 받아온게 batch이다.
-        paths, images, targets = list(zip(*batch)) # list(zip(data1,data2,data3...datan)
+        paths, images, targets = list(zip(*batch))
 
-        # boxes가 없는 target은 지움.
+        # Remove empty placeholder targets
         targets = [boxes for boxes in targets if boxes is not None]
 
         # Add sample index to targets
         for i, boxes in enumerate(targets):
-            # index로 접근하여 원소별로 값을 변경하면 기존의 값도 같이 변경된다. (주소값참조해서 바꾸는거라서 그러는거 같음)
-            boxes[:, 0] = i # target마다 인덱스를 매김 첫번째target의 bbox index > 0 두번쨰target의 bbox index >1
+            boxes[:, 0] = i
 
         try:
-            targets = torch.cat(targets, 0) # batch만큼의 target들을 하나의 tensor로 합침 (행기준으로)
+            targets = torch.cat(targets, 0)
         except RuntimeError:
             targets = None  # No boxes for an image
 
         # Selects new image size every 10 batches
         if self.multiscale and self.batch_count % 10 == 0:
-            # yolo는 320부터 608까지의 다양한 scale로 resize를 하여 학습시킨다. (근데 bbox정보는 조정안해도되나?)
-            self.image_size = random.choice(range(320, 608 + 1, 32)) # choice는 아무원소나 하나 뽑아줌. ()안에 있는것 중에.
+            self.image_size = random.choice(range(320, 608 + 1, 32))
 
         # Resize images to input shape
-        images = torch.stack([resize(image, self.image_size) for image in images]) # img를 random으로 받아온 size로 resizing하여 쌓는다.
+        images = torch.stack([resize(image, self.image_size) for image in images])
         self.batch_count += 1
-        # return : (img의 경로, resize한 img, resize하기전 img에 대한 anchor box정보들)
+
         return paths, images, targets
 
 # path = "../../data/coco/train.txt"
