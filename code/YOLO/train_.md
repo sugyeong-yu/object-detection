@@ -199,3 +199,4 @@ paths, images, targets = list(zip(*batch))
 ## 참고
 - dataset.py - <https://github.com/lulindev/yolov3-pytorch/blob/df89032d6764ba09524445d17007561aad9a1ea1/utils/datasets.py#L40>
 - cocodataset.py - <https://velog.io/@dkdk6638/Pytorch-COCO-Dataset>
+- Dataload <https://tutorials.pytorch.kr/beginner/saving_loading_models.html>
