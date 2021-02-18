@@ -194,6 +194,25 @@ paths, images, targets = list(zip(*batch))
 - 이는 list(zip(data1,data2,data3, ... datan)) 과 동일하다.\
 ![image](https://user-images.githubusercontent.com/70633080/106994218-b2bbd200-67bf-11eb-9367-f31b66a3c903.png)
 > 출력 : ('E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg', 'E:\\study\\sugyeong_github\\object-detection\\models\\YOLO\\data\\coco\\images\\train2014\\COCO_train2014_000000000009.jpg')
+> 
+
+### def init_weights_normal(m)
+: 정규분포 형태로 가중치를 초기화하는 함수
+```
+def init_weights_normal(m):
+  classname = m.__class__.__name__
+      if classname.find("Conv") != -1:
+          torch.nn.init.kaiming_normal_(m.weight.data, 0.1)
+
+      elif classname.find("BatchNorm2d") != -1:
+          torch.nn.init.normal_(m.weight.data, 1.0, 0.02) # model의 weight의 data를 평균이 1.0이고 표준편차가 0.02안 가우시안분포에 따라 tensor를 채움
+          torch.nn.init.constant_(m.bias.data, 0.0)
+```
+- 가중치 초기화
+  - torch.nn.init.normal_(tensor,mean=0.0,std=1.0) : tensor을 평균0.0, 표준편차1.0인 정규분포에 따라 초기화
+  - torch.nn.init.uniform_(tensor,a=0.0,b=1.0) : tensor을 a~b 범위의 uniform distribution에 따라 초기화
+   
+
 ---------------------------------------------------------------------
 
 ## 참고
