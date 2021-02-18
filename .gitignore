@@ -1,3 +1,4 @@
 #제외할 폴더
 code/YOLO/data/coco/images/
 code/YOLO/data/coco/labels
+code/YOLO/weights
