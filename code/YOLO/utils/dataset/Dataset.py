@@ -5,6 +5,16 @@ import os
 import numpy as np
 import random
 
+def init_weights_normal(m):
+    """정규분포 형태로 가중치를 초기화한다."""
+    classname = m.__class__.__name__
+    if classname.find("Conv") != -1:
+        torch.nn.init.kaiming_normal_(m.weight.data, 0.1)
+
+    elif classname.find("BatchNorm2d") != -1:
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
+
 
 def parse_data_config(path: str):
     """데이터셋 설정 파일을 parse한다."""

@@ -21,7 +21,7 @@ if __name__== "__main__":
     parser.add_argument("--num_workers", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--gradient_accumulation",type=int,default=1,help="number of gradient accums before step")
     parser.add_argument("--epoch",type=int,default=1,help="number of epoch")
-    # parser.add_argument("--pretrained_weights", type=str, default='weights/darknet53.conv.74',help="if specified starts from checkpoint model") # weight불러오기
+    parser.add_argument("--pretrained_weights", type=str, default='../../weights/darknet53.conv.74',help="if specified starts from checkpoint model") # weight불러오기
 
     args = parser.parse_args() # 저장
     print(args)
@@ -50,11 +50,13 @@ if __name__== "__main__":
 
     # model
     model = yolov3.Yolo_v3(args.image_size,num_classes).to(device)
-    # model.apply(init_weights_normal) # model.apply(f) > 현재 모듈의 모든 서브모듈에 해당함수f를 적용한다. (모델파라미터 초기화할때 많이사용)
-    # if args.pretrained_weights.endswith('.pth'):
-    #     model.load_state_dict(torch.load(args.pretrained_weights))
-    # else:
-    #     model.load_darknet_weights(args.pretrained_weights)
+    model.apply(init_weights_normal) # model.apply(f) > 현재 모듈의 모든 서브모듈에 해당함수f를 적용한다. (모델파라미터 초기화할때 많이사용)
+    if args.pretrained_weights.endswith('.pth'):
+        # yolo학습된 파일 불러오기
+        model.load_state_dict(torch.load(args.pretrained_weights))
+    else:
+        # darknet 학습된 파일 불러오기
+        model.load_darknet_weights(args.pretrained_weights)
 
     #optimizer설정
     optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
