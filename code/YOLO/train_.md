@@ -211,8 +211,13 @@ def init_weights_normal(m):
 - 가중치 초기화
   - torch.nn.init.normal_(tensor,mean=0.0,std=1.0) : tensor을 평균0.0, 표준편차1.0인 정규분포에 따라 초기화
   - torch.nn.init.uniform_(tensor,a=0.0,b=1.0) : tensor을 a~b 범위의 uniform distribution에 따라 초기화
-   
-
+    - uniform distribution : [a,b]의 범위에서 모든 값의 확률이 동일한 분포
+  - torch.nn.init.constant_(tensor,val) : tensor를 val값으로 채운다.
+  - torch.nn.init.kaiming_uniform_(tensor, a,mode='fan_in', nonlinearity='leaky_relu') : Delving deep into rectifiers : Surpassing human-level performance on ImageNet classification -He, K. et al.에 설명 된 방법에 따라 입력 Tensor 를 값으로 채운다. 그리고 균등분포를 사용함
+    - a : 이후 layer에 사용되는 음의기울기
+    - mode : 'fan_in'은 순방향패스의 가중치 분산크기가 유지됨. 'fan_out' 은 역방향 패스의 크기가 유지됨
+    - nonlinearity : relu 또는 leaky_relu
+  - torch.nn.init.kaiming_normal_(tensor, a,mode='fan_in', nonlinearity='leaky_relu') : 위처럼 설명된 방법에 따라 tensor를 값으로 채움. 정규분포를 
 ---------------------------------------------------------------------
 
 ## 참고
