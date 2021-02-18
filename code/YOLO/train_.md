@@ -208,6 +208,7 @@ def init_weights_normal(m):
           torch.nn.init.normal_(m.weight.data, 1.0, 0.02) # model의 weight의 data를 평균이 1.0이고 표준편차가 0.02안 가우시안분포에 따라 tensor를 채움
           torch.nn.init.constant_(m.bias.data, 0.0)
 ```
+- model.__class__.__name__ : 
 - 가중치 초기화
   - torch.nn.init.normal_(tensor,mean=0.0,std=1.0) : tensor을 평균0.0, 표준편차1.0인 정규분포에 따라 초기화
   - torch.nn.init.uniform_(tensor,a=0.0,b=1.0) : tensor을 a~b 범위의 uniform distribution에 따라 초기화
