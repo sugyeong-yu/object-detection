@@ -25,7 +25,7 @@ class YoloDetection(nn.Module):
             x.view(batch_size, num_anchor,self.numclass + 5, grid_size, grid_size)
                 .permute(0, 1, 3, 4, 2).contiguous()
         )
-        print(pred.shape)  # batch, anchor,img,img,5+class
+        #print(pred.shape)  # batch, anchor,img,img,5+class
 
         bx = torch.sigmoid(pred[..., 0])  # 시작은 그냥 특징맵의 x좌표로 변화량 계산 -> 학습을 통해 변화
         by = torch.sigmoid(pred[..., 1])  # 모두 0~1 사이값 즉, 변화량

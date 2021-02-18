@@ -103,6 +103,8 @@ class Yolo_v3(nn.Module):
         self.conv_final3 = self.conv_final(128, 255)
         self.anchor_box3 = YoloDetection(anchor['grid52'], self.img_size, self.class_num)
 
+        self.yolo_layers=[self.anchor_box3,self.anchor_box2,self.anchor_box1]
+
     def forward(self, x, target):
         print("darknet53 ")
         res5, res4, res3 = self.darknet53(x)
@@ -139,14 +141,14 @@ class Yolo_v3(nn.Module):
 
         anchor52, loss_layer3 = self.anchor_box3(thrid, target)  # [1, 8112, 85]
 
-        # feature 크기출력
-        print(">>>>> featuremap extract <<<<<")
-        print("first_feature:", first.shape)
-        print("second_feature:", second.shape)
-        print("thrid_feature:", thrid.shape)
+        # # feature 크기출력
+        # print(">>>>> featuremap extract <<<<<")
+        # print("first_feature:", first.shape)
+        # print("second_feature:", second.shape)
+        # print("thrid_feature:", thrid.shape)
 
         # anchor box합치기
-        print(">>>>> anchor box prediction <<<<<")
+        #print(">>>>> anchor box prediction <<<<<")
         yolo_output = [anchor13, anchor26, anchor52]
         yolo_output = torch.cat(yolo_output, 1).detach()  # 인덱스1번째 차원으로 합치기. shape: [1,10647,85] # 10647= 모든 앵커수 * grid
 
@@ -178,11 +180,11 @@ class Yolo_v3(nn.Module):
         ptr = 0
         # Load Darknet-53 weights
         for name, modules in self.darknet53.named_modules():
-            print("name:", name)
+            # print("name:", name)
             module_type = name.split('_')[0]
             if module_type == 'conv':
                 if str(type(modules)) == "<class 'torch.nn.modules.container.Sequential'>":
-                    print(modules[0])
+                    #print(modules[0])
                     ptr = self.load_bn_weights(modules[1], weights, ptr)  # module[1]은 DBL에서의 batch
                     ptr = self.load_conv_weights(modules[0], weights, ptr)  # [0]은 DBL에서의 conv
 

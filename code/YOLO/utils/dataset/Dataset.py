@@ -8,12 +8,13 @@ import random
 def init_weights_normal(m):
     """정규분포 형태로 가중치를 초기화한다."""
     classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
+    #print(classname) # Conv2d, BatchNorm2d, LeakyReLU 등...
+    if classname.find("Conv2d") != -1:
         torch.nn.init.kaiming_normal_(m.weight.data, 0.1)
 
     elif classname.find("BatchNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02) # model의 weight의 data를 평균이 1.0이고 표준편차가 0.02안 가우시안분포에 따라 tensor를 채움
+        torch.nn.init.constant_(m.bias.data, 0.0) # 모델의 편향? 값을 0으로 채움.
 
 
 def parse_data_config(path: str):
@@ -22,7 +23,7 @@ def parse_data_config(path: str):
     with open(path, 'r') as f:
         lines = f.readlines()  # lines 는 train.txt경로 valid.txt경로
     for line in lines:
-        print(line)
+        #print(line)
         line = line.strip()  # strip() > 문자열의 양끝에 존재하는 공백과 \n을 제거해줌
         key, value = line.split('=')  # key는 train value는 train.txt경로
         options[key.strip()] = value.strip()  # dict반환

@@ -22,7 +22,7 @@ def NMS(pred_box,conf_thres,nms_thres):
 
     # batch마다 가져옴.  image가 1장일때, batch가 1이므로 반복문이 1번돈다.
     for img_i,img_pred in enumerate(pred_box):
-        print(img_pred.shape) #[10647, 85]
+        #print(img_pred.shape) #[10647, 85]
         # 1. confidence score가 thres 넘는거만 통과
         img_pred = img_pred[img_pred[:,4] >= conf_thres] # True/False로 저장 #[?,85]
         if not img_pred.size(0):
@@ -62,8 +62,8 @@ test = torch.zeros(1,10647,85)
 NMS(test,1,1)
 
 def bbox_wh_iou(wh1, wh2):
-    print("wh1:",wh1)
-    print("wh2:", wh2)
+    #print("wh1:",wh1)
+    #print("wh2:", wh2)
     wh2 = wh2.t()
     w1, h1 = wh1[0], wh1[1]
     w2, h2 = wh2[0], wh2[1]
@@ -103,7 +103,7 @@ def bbox_iou(box1,box2,x1y1x2y2=True):
 def matching_target(pred_box,target,pred_cls,anchors,ignore_thres):
     # pred_box의 shape : (1,3,13,13,4) >> 13*13 픽셀 하나 = grid1개 당 앵커박스 3개있음
     batch_size = pred_box.size(0) #배치사이즈 , 1
-    print("batxch",batch_size)
+    #print("batxch",batch_size)
     num_anchor = pred_box.size(1) #앵커박스개수 ,3
     num_class = pred_cls.size(-1) #class 개수
     grid_size = pred_box.size(2) #grid size 13->26->52
