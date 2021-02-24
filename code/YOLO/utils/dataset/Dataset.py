@@ -91,11 +91,11 @@ class Dataset(torch.utils.data.Dataset):
 
         _, h, w = image.shape
         h_factor, w_factor = (h, w) if self.normalized_labels else (1, 1)
-
+        print("image_shape: ", h_factor,w_factor)
         # Pad to square resolution
         image, pad = pad_to_square(image)
         _, padded_h, padded_w = image.shape
-
+        print("square: ", padded_h,padded_w)
         # 2. Label
         # -----------------------------------------------------------------------------------
         label_path = self.label_files[index].rstrip()
@@ -103,20 +103,23 @@ class Dataset(torch.utils.data.Dataset):
         targets = None
         if os.path.exists(label_path):
             boxes = torch.from_numpy(np.loadtxt(label_path).reshape(-1, 5))
-
+            #print("before: ", boxes) > tensor([[23.0000,  0.7703,  0.4897,  0.3359,  0.6976],[23.0000,  0.1860,  0.9016,  0.2063,  0.1296]]
             # Extract coordinates for unpadded + unscaled image
+            # 기존 460 * 640크기의 이미지에서의 좌표구하기(좌상단, 우하단)
             x1 = w_factor * (boxes[:, 1] - boxes[:, 3] / 2)
             y1 = h_factor * (boxes[:, 2] - boxes[:, 4] / 2)
             x2 = w_factor * (boxes[:, 1] + boxes[:, 3] / 2)
             y2 = h_factor * (boxes[:, 2] + boxes[:, 4] / 2)
 
             # Adjust for added padding
+            # 640 * 640 크기의 이미지로 맞춰줌 padding
             x1 += pad[0]
             y1 += pad[2]
             x2 += pad[1]
             y2 += pad[3]
 
             # Returns (x, y, w, h)
+            # 1 * 1 크기의 이미지에서의 좌표로 변환. (정사각형, 패딩을 진행한것)
             boxes[:, 1] = ((x1 + x2) / 2) / padded_w
             boxes[:, 2] = ((y1 + y2) / 2) / padded_h
             boxes[:, 3] *= w_factor / padded_w
@@ -124,7 +127,7 @@ class Dataset(torch.utils.data.Dataset):
 
             targets = torch.zeros((len(boxes), 6))
             targets[:, 1:] = boxes
-
+            #print("target ", targets) # tensor([[ 0.0000, 23.0000,  0.7703,  0.4931,  0.3359,  0.4643],[ 0.0000, 23.0000,  0.1860,  0.7673,  0.2063,  0.0862]])
         # Apply augmentations
         if self.augment:
             if np.random.random() < 0.5:
@@ -160,8 +163,8 @@ class Dataset(torch.utils.data.Dataset):
 
         return paths, images, targets
 
-# path = "../../data/coco/train.txt"
-# batch1 = Dataset(path, 416, False,False).__getitem__(1)
+path = "../../data/coco/train.txt"
+batch1 = Dataset(path, 416, False,False).__getitem__(1)
 # batch2 = Dataset(path, 416, False).__getitem__(2)
 # path,img,targets= list(zip(batch1,batch2))
 # print(path)
